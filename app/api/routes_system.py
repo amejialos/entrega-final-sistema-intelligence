@@ -9,7 +9,7 @@ from app.api.schemas import HealthOut, InfoRAG
 router = APIRouter(tags=["sistema"])
 
 
-@router.get("/health", response_model=HealthOut)
+@router.get("/health", summary="Salud del servicio", response_model=HealthOut)
 async def health(recursos: RecursosDep) -> HealthOut:
     """Redis responde y el grafo y la capa RAG están cargados. No llama a Pinecone ni al LLM."""
     await recursos.redis.ping()

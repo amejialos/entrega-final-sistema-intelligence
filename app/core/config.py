@@ -31,14 +31,16 @@ class PrecioModelo(BaseModel):
     salida_usd_por_millon: float = Field(ge=0)
 
 
-# Precios de referencia para estimar el costo por respuesta (US$ / 1M tokens). Son los que usa
-# la tabla de modelos de Arize Phoenix para calcular el costo de cada span, así el costo que
-# devuelve la API coincide con el del dashboard. Se pueden reemplazar con PRECIOS_LLM (JSON).
-# Ojo: con el free tier de Gemini el gasto real es 0; esto estima lo que costaría pagando.
+# Precios de referencia para estimar el costo por respuesta (US$ / 1M tokens). Son los de la
+# tabla de modelos de Arize Phoenix 20.21.1 (consultada por su API GraphQL, `generativeModels`),
+# así el costo que devuelve la API coincide con el del dashboard. Se pueden reemplazar con
+# PRECIOS_LLM (JSON). Ojo: con el free tier de Gemini el gasto real es 0; esto estima lo que
+# costaría pagando. Los embeddings no se cuentan (Phoenix tampoco los costea).
 PRECIOS_REFERENCIA: dict[str, PrecioModelo] = {
-    "gemini-flash-lite-latest": PrecioModelo(entrada_usd_por_millon=0.10, salida_usd_por_millon=0.40),
-    "gemini-3.5-flash-lite": PrecioModelo(entrada_usd_por_millon=0.10, salida_usd_por_millon=0.40),
-    "gemini-3.1-flash-lite": PrecioModelo(entrada_usd_por_millon=0.10, salida_usd_por_millon=0.40),
+    "gemini-flash-lite-latest": PrecioModelo(entrada_usd_por_millon=0.30, salida_usd_por_millon=2.50),
+    "gemini-3.5-flash-lite": PrecioModelo(entrada_usd_por_millon=0.30, salida_usd_por_millon=2.50),
+    "gemini-3.1-flash-lite": PrecioModelo(entrada_usd_por_millon=0.25, salida_usd_por_millon=1.50),
+    "gemini-flash-latest": PrecioModelo(entrada_usd_por_millon=0.75, salida_usd_por_millon=3.75),
     "gpt-4o-mini": PrecioModelo(entrada_usd_por_millon=0.15, salida_usd_por_millon=0.60),
 }
 

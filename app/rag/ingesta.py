@@ -7,7 +7,7 @@
   deterministas como id. Volver a correrla sobreescribe los mismos vectores en vez de
   duplicarlos. Todo va al namespace de `PINECONE_NAMESPACE`, nunca al namespace por defecto.
 
-La usan `scripts/init_index.py` y `scripts/ingest.py`.
+La usa `scripts/ingest.py` (`uv run python -m scripts.ingest`).
 """
 
 import asyncio

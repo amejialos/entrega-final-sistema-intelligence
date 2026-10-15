@@ -17,7 +17,9 @@ router = APIRouter(prefix="/conversations", tags=["conversaciones"])
 MAX_CHECKPOINTS_CONTADOS = 500
 
 
-@router.get("/{thread_id}", response_model=ConversacionOut, responses={404: {"model": ErrorOut}})
+@router.get(
+    "/{thread_id}", summary="Historial de una conversación", response_model=ConversacionOut, responses={404: {"model": ErrorOut}}
+)
 async def ver_conversacion(thread_id: Annotated[str, Path(pattern=PATRON_THREAD_ID)], recursos: RecursosDep) -> ConversacionOut:
     """Turnos respondidos, jobs del hilo, si está pausado y cuántos checkpoints tiene en Redis."""
     config = {"configurable": {"thread_id": thread_id}}

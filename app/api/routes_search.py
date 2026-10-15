@@ -14,7 +14,9 @@ from app.rag.schemas import ConsultaRAG, ResultadoBusqueda
 router = APIRouter(tags=["rag"])
 
 
-@router.post("/search", response_model=ResultadoBusqueda, responses={503: {"model": ErrorOut}})
+@router.post(
+    "/search", summary="Búsqueda directa en el RAG", response_model=ResultadoBusqueda, responses={503: {"model": ErrorOut}}
+)
 async def buscar(consulta: ConsultaRAG, recursos: RecursosDep) -> ResultadoBusqueda:
     """Top-k fragmentos de la documentación de Caudal (híbrido por defecto: Pinecone + BM25 con RRF)."""
     try:

@@ -20,7 +20,7 @@ from app.api.schemas import (
 from app.worker.jobs import ConversacionOcupada
 from app.worker.models import DecisionHumana, Estado, JobRecord, MensajeReanudar
 
-router = APIRouter(prefix="/tasks", tags=["tareas"])
+router = APIRouter(prefix="/tasks")
 
 JobId = Annotated[str, Path(pattern=PATRON_JOB_ID, description="Id del job (32 caracteres hex).")]
 
@@ -35,6 +35,8 @@ def _links(job_id: str, thread_id: str, esperando: bool = False) -> Links:
 
 @router.post(
     "",
+    tags=["tareas"],
+    summary="Crear un turno (responde 202 con job_id y thread_id)",
     status_code=status.HTTP_202_ACCEPTED,
     response_model=TareaAceptada,
     responses={409: {"model": ErrorOut, "description": "La conversación ya tiene un job en curso."}},
@@ -53,7 +55,13 @@ async def crear_tarea(tarea: TareaIn, recursos: RecursosDep, response: Response)
     return TareaAceptada(job_id=job.job_id, thread_id=job.thread_id, status=job.status, links=_links(job.job_id, job.thread_id))
 
 
-@router.get("/{job_id}", response_model=JobRecord, responses={404: {"model": ErrorOut}})
+@router.get(
+    "/{job_id}",
+    tags=["tareas"],
+    summary="Estado, resultado y métricas de un job",
+    response_model=JobRecord,
+    responses={404: {"model": ErrorOut}},
+)
 async def estado_tarea(job_id: JobId, recursos: RecursosDep) -> JobRecord:
     """Estado actual del job: PENDING, RUNNING, WAITING_APPROVAL, DONE o FAILED (lectura de Redis)."""
     job = await recursos.store.get(job_id)
@@ -62,7 +70,7 @@ async def estado_tarea(job_id: JobId, recursos: RecursosDep) -> JobRecord:
     return job
 
 
-@router.get("", response_model=list[JobRecord])
+@router.get("", tags=["tareas"], summary="Últimos jobs", response_model=list[JobRecord])
 async def listar_tareas(recursos: RecursosDep, limite: int = Query(20, ge=1, le=100)) -> list[JobRecord]:
     """Los últimos jobs, del más nuevo al más viejo."""
     return await recursos.store.listar(limite)
@@ -70,6 +78,7 @@ async def listar_tareas(recursos: RecursosDep, limite: int = Query(20, ge=1, le=
 
 @router.post(
     "/{job_id}/approve",
+    summary="Aprobar o rechazar una tarea crítica pausada",
     status_code=status.HTTP_202_ACCEPTED,
     response_model=AprobacionAceptada,
     tags=["human-in-the-loop"],
