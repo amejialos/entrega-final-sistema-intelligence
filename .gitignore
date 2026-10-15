@@ -1,0 +1,32 @@
+# Secretos: nunca subir las API keys
+.env
+.env.*
+!.env.example
+
+# Entorno virtual
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Datos locales de Redis y Phoenix (volúmenes, dumps)
+*.rdb
+*.aof
+appendonlydir/
+redis-data/
+phoenix-data/
+*.sqlite
+*.sqlite-*
+*.db
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+.claude/
+node_modules/
