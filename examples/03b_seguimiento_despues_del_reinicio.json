@@ -1,0 +1,181 @@
+{
+  "escenario": "03b_seguimiento_despues_del_reinicio",
+  "descripcion": "Tercer turno de la conversación 01/02 después de reiniciar API y Redis.",
+  "fecha": "2026-10-15T08:15:06",
+  "pasos": [
+    {
+      "nota": "",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "Resumime en dos líneas el tamaño de lote recomendado y los dos tiempos que calculamos (con 4 y con 8 workers).",
+        "thread_id": "e2e-conversacion-final"
+      },
+      "status": 202,
+      "ms": 10.1,
+      "respuesta": {
+        "job_id": "3049339b876241e284b0ad8f25bc3be1",
+        "thread_id": "e2e-conversacion-final",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/3049339b876241e284b0ad8f25bc3be1",
+          "conversacion": "/conversations/e2e-conversacion-final",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/3049339b876241e284b0ad8f25bc3be1",
+      "status": 200,
+      "respuesta": {
+        "job_id": "3049339b876241e284b0ad8f25bc3be1",
+        "thread_id": "e2e-conversacion-final",
+        "status": "DONE",
+        "pregunta": "Resumime en dos líneas el tamaño de lote recomendado y los dos tiempos que calculamos (con 4 y con 8 workers).",
+        "publicar": false,
+        "created_at": "2026-10-15T11:15:06.416+00:00",
+        "updated_at": "2026-10-15T11:15:40.531+00:00",
+        "started_at": "2026-10-15T11:15:06.420+00:00",
+        "finished_at": "2026-10-15T11:15:40.531+00:00",
+        "resultado": {
+          "respuesta": "El tamaño de lote recomendado para ingesta masiva es de 5.000 eventos o más [caudal-rendimiento › Backpressure y tamaño de lote]. Con este tamaño, el procesamiento de 2.000.000 de eventos tarda 20 segundos usando 4 workers y 10 segundos usando 8 workers [cálculos del analista].",
+          "fuentes": [],
+          "contribuciones": [],
+          "ruta_supervisor": [
+            "FINISH"
+          ],
+          "turno": 3,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [],
+          "aprobacion": null,
+          "reporte_publicado": null
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": 34.115,
+          "latencia_ejecucion_s": 34.094,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 2,
+          "tokens_entrada": 1840,
+          "tokens_salida": 213,
+          "tokens_totales": 2053,
+          "costo_estimado_usd": 0.00097025,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 1,
+              "tokens_entrada": 1155,
+              "tokens_salida": 133,
+              "costo_estimado_usd": 0.000679
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 685,
+              "tokens_salida": 80,
+              "costo_estimado_usd": 0.00029125
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:15:06.416+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:15:06.420+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-15T11:15:40.531+00:00",
+            "por": null
+          }
+        ]
+      }
+    },
+    {
+      "nota": "los 3 turnos, del checkpoint en Redis",
+      "pedido": "GET /conversations/e2e-conversacion-final",
+      "body": null,
+      "status": 200,
+      "ms": 74.5,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-final",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+            "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+            "respuesta": "Para la ingesta masiva en Caudal, la documentación recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote]. Cabe notar que el valor por defecto configurado en el sistema es de 500 eventos [caudal-instalacion › Configuración con CaudalConfig].\n\nBasado en la recomendación de 5.000 eventos por lote, los cálculos realizados por el analista son los siguientes:\n\n*   **Cantidad de lotes:** Se requieren **400 lotes** para procesar 2.000.000 de eventos (operación: 2.000.000 / 5.000).\n*   **Tiempo total de procesamiento:** Se estima un tiempo de **20 segundos** (o 0,33 minutos). Este cálculo considera 4 workers procesando 5 lotes por segundo cada uno, lo que resulta en una capacidad total de 20 lotes por segundo (operación: 400 lotes / 20 lotes por segundo).",
+            "fuentes": [
+              "caudal-changelog › Caudal 2.5",
+              "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+              "caudal-instalacion › Configuración con CaudalConfig",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:13:09+00:00"
+          },
+          {
+            "numero": 2,
+            "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:14:00+00:00"
+          },
+          {
+            "numero": 3,
+            "job_id": "3049339b876241e284b0ad8f25bc3be1",
+            "pregunta": "Resumime en dos líneas el tamaño de lote recomendado y los dos tiempos que calculamos (con 4 y con 8 workers).",
+            "respuesta": "El tamaño de lote recomendado para ingesta masiva es de 5.000 eventos o más [caudal-rendimiento › Backpressure y tamaño de lote]. Con este tamaño, el procesamiento de 2.000.000 de eventos tarda 20 segundos usando 4 workers y 10 segundos usando 8 workers [cálculos del analista].",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:15:40+00:00"
+          }
+        ],
+        "jobs": [
+          "1c1ba8726ecc4d70923b07cdd9255cbb",
+          "a953a40cd4324adeaaa65e13c5ed98ea",
+          "3049339b876241e284b0ad8f25bc3be1"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 15,
+        "checkpoints": 41
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "03b seguimiento post-reinicio",
+    "job_id": "3049339b876241e284b0ad8f25bc3be1",
+    "thread_id": "e2e-conversacion-final",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "FINISH"
+    ],
+    "turno": 3,
+    "fuentes": 0,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 34.115,
+    "latencia_ejecucion_s": 34.094,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 2,
+    "tokens_entrada": 1840,
+    "tokens_salida": 213,
+    "costo_estimado_usd": 0.00097025,
+    "error": null
+  }
+}

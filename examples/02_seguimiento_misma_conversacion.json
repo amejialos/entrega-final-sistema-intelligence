@@ -1,0 +1,187 @@
+{
+  "escenario": "02_seguimiento_misma_conversacion",
+  "descripcion": "Seguimiento en el mismo thread_id: usa el historial guardado en el checkpoint.",
+  "fecha": "2026-10-15T08:13:26",
+  "pasos": [
+    {
+      "nota": "",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+        "thread_id": "e2e-conversacion-final"
+      },
+      "status": 202,
+      "ms": 8.4,
+      "respuesta": {
+        "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+        "thread_id": "e2e-conversacion-final",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/a953a40cd4324adeaaa65e13c5ed98ea",
+          "conversacion": "/conversations/e2e-conversacion-final",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/a953a40cd4324adeaaa65e13c5ed98ea",
+      "status": 200,
+      "respuesta": {
+        "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+        "thread_id": "e2e-conversacion-final",
+        "status": "DONE",
+        "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+        "publicar": false,
+        "created_at": "2026-10-15T11:13:26.008+00:00",
+        "updated_at": "2026-10-15T11:14:00.735+00:00",
+        "started_at": "2026-10-15T11:13:26.013+00:00",
+        "finished_at": "2026-10-15T11:14:00.735+00:00",
+        "resultado": {
+          "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+          "fuentes": [],
+          "contribuciones": [
+            {
+              "agente": "analyst",
+              "paso": 1,
+              "estado": "ok",
+              "tarea": "Calcula el nuevo tiempo de procesamiento para 400 lotes usando 8 workers, donde cada worker procesa 5 lotes por segundo. La capacidad total será de 40 lotes por segundo (8 * 5). Divide los 400 lotes entre la capacidad total de 40 lotes por segundo para obtener el tiempo en segundos.",
+              "resultado": "El nuevo tiempo de procesamiento para 400 lotes con 8 workers (capacidad total de 40 lotes por segundo) es de **10 segundos**.\n\n*   **Operación:** 400 lotes / 40 lotes por segundo = 10 segundos.\n*   **Supuestos:** Se utiliza la cantidad de 400 lotes proporcionada en la tarea y la capacidad total de 40 lotes por segundo calculada a partir de los 8 workers (8 * 5 lotes/segundo).",
+              "fuentes": [
+                "calcular"
+              ],
+              "herramientas": [
+                "calcular"
+              ]
+            }
+          ],
+          "ruta_supervisor": [
+            "analyst",
+            "FINISH"
+          ],
+          "turno": 2,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [],
+          "aprobacion": null,
+          "reporte_publicado": null
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": 34.727,
+          "latencia_ejecucion_s": 34.705,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 5,
+          "tokens_entrada": 5012,
+          "tokens_salida": 566,
+          "tokens_totales": 5578,
+          "costo_estimado_usd": 0.00252565,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 2213,
+              "tokens_salida": 313,
+              "costo_estimado_usd": 0.0014464
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 3,
+              "tokens_entrada": 2799,
+              "tokens_salida": 253,
+              "costo_estimado_usd": 0.00107925
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:13:26.008+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:13:26.013+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-15T11:14:00.735+00:00",
+            "por": null
+          }
+        ]
+      }
+    },
+    {
+      "nota": "historial de la conversación",
+      "pedido": "GET /conversations/e2e-conversacion-final",
+      "body": null,
+      "status": 200,
+      "ms": 509.2,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-final",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+            "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+            "respuesta": "Para la ingesta masiva en Caudal, la documentación recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote]. Cabe notar que el valor por defecto configurado en el sistema es de 500 eventos [caudal-instalacion › Configuración con CaudalConfig].\n\nBasado en la recomendación de 5.000 eventos por lote, los cálculos realizados por el analista son los siguientes:\n\n*   **Cantidad de lotes:** Se requieren **400 lotes** para procesar 2.000.000 de eventos (operación: 2.000.000 / 5.000).\n*   **Tiempo total de procesamiento:** Se estima un tiempo de **20 segundos** (o 0,33 minutos). Este cálculo considera 4 workers procesando 5 lotes por segundo cada uno, lo que resulta en una capacidad total de 20 lotes por segundo (operación: 400 lotes / 20 lotes por segundo).",
+            "fuentes": [
+              "caudal-changelog › Caudal 2.5",
+              "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+              "caudal-instalacion › Configuración con CaudalConfig",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:13:09+00:00"
+          },
+          {
+            "numero": 2,
+            "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:14:00+00:00"
+          }
+        ],
+        "jobs": [
+          "1c1ba8726ecc4d70923b07cdd9255cbb",
+          "a953a40cd4324adeaaa65e13c5ed98ea"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 12,
+        "checkpoints": 35
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "02 seguimiento (mismo thread_id)",
+    "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+    "thread_id": "e2e-conversacion-final",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "analyst",
+      "FINISH"
+    ],
+    "turno": 2,
+    "fuentes": 0,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 34.727,
+    "latencia_ejecucion_s": 34.705,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 5,
+    "tokens_entrada": 5012,
+    "tokens_salida": 566,
+    "costo_estimado_usd": 0.00252565,
+    "error": null
+  }
+}

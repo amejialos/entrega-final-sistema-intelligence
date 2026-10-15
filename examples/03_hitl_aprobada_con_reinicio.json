@@ -1,0 +1,544 @@
+{
+  "escenario": "03_hitl_aprobada_con_reinicio",
+  "descripcion": "Tarea crítica (pide publicar): pausa en WAITING_APPROVAL, se reinician la API y Redis, sigue pausada, se aprueba y publica.",
+  "fecha": "2026-10-15T08:14:02",
+  "pasos": [
+    {
+      "nota": "",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte."
+      },
+      "status": 202,
+      "ms": 6.2,
+      "respuesta": {
+        "job_id": "487903891cda493e9e9201b2906edb29",
+        "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/487903891cda493e9e9201b2906edb29",
+          "conversacion": "/conversations/2608a82de5bc42c2b41f3c7881f1aa72",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta WAITING_APPROVAL",
+      "pedido": "GET /tasks/487903891cda493e9e9201b2906edb29",
+      "status": 200,
+      "respuesta": {
+        "job_id": "487903891cda493e9e9201b2906edb29",
+        "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+        "status": "WAITING_APPROVAL",
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte.",
+        "publicar": false,
+        "created_at": "2026-10-15T11:14:02.768+00:00",
+        "updated_at": "2026-10-15T11:14:54.485+00:00",
+        "started_at": "2026-10-15T11:14:02.770+00:00",
+        "finished_at": null,
+        "resultado": null,
+        "error": null,
+        "aprobacion_pendiente": {
+          "accion": "publicar_reporte",
+          "motivos": [
+            "La pregunta pide una acción hacia afuera ('publica'): se ejecutaría 'publicar_reporte'."
+          ],
+          "borrador": "**Reporte para el equipo de soporte: Error CAU-417**\n\nEn relación con la consulta sobre el código de error CAU-417 en Caudal, se informa lo siguiente:\n\n*   **Significado y solución:** Actualmente, la documentación oficial no contiene la descripción completa ni el procedimiento de resolución para este error. El fragmento disponible en la fuente [caudal-errores › Códigos de error CAU] se interrumpe abruptamente al mencionar *\"el esquema de un\"*, impidiendo determinar el significado técnico o los pasos a seguir.\n\n**Estado de la solicitud:** El requerimiento queda **sin resolver** debido a la falta de información en la documentación técnica disponible. Se recomienda escalar esta incidencia al equipo de desarrollo o documentación para completar la entrada correspondiente en el manual de errores.",
+          "como_responder": "POST /tasks/{job_id}/approve con {\"aprobado\": true|false, \"comentario\": \"...\", \"revisor\": \"...\"}"
+        },
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": null,
+          "latencia_ejecucion_s": 51.714,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 7,
+          "tokens_entrada": 12015,
+          "tokens_salida": 569,
+          "tokens_totales": 12584,
+          "costo_estimado_usd": 0.0048359,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 1628,
+              "tokens_salida": 268,
+              "costo_estimado_usd": 0.0011584
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 4,
+              "tokens_entrada": 9925,
+              "tokens_salida": 133,
+              "costo_estimado_usd": 0.00331
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 462,
+              "tokens_salida": 168,
+              "costo_estimado_usd": 0.0003675
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:14:02.768+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:14:02.770+00:00",
+            "por": null
+          },
+          {
+            "status": "WAITING_APPROVAL",
+            "t": "2026-10-15T11:14:54.485+00:00",
+            "por": null
+          }
+        ]
+      }
+    },
+    {
+      "nota": "conversación 01/02 ANTES del reinicio",
+      "pedido": "GET /conversations/e2e-conversacion-final",
+      "body": null,
+      "status": 200,
+      "ms": 105.7,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-final",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+            "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+            "respuesta": "Para la ingesta masiva en Caudal, la documentación recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote]. Cabe notar que el valor por defecto configurado en el sistema es de 500 eventos [caudal-instalacion › Configuración con CaudalConfig].\n\nBasado en la recomendación de 5.000 eventos por lote, los cálculos realizados por el analista son los siguientes:\n\n*   **Cantidad de lotes:** Se requieren **400 lotes** para procesar 2.000.000 de eventos (operación: 2.000.000 / 5.000).\n*   **Tiempo total de procesamiento:** Se estima un tiempo de **20 segundos** (o 0,33 minutos). Este cálculo considera 4 workers procesando 5 lotes por segundo cada uno, lo que resulta en una capacidad total de 20 lotes por segundo (operación: 400 lotes / 20 lotes por segundo).",
+            "fuentes": [
+              "caudal-changelog › Caudal 2.5",
+              "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+              "caudal-instalacion › Configuración con CaudalConfig",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:13:09+00:00"
+          },
+          {
+            "numero": 2,
+            "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:14:00+00:00"
+          }
+        ],
+        "jobs": [
+          "1c1ba8726ecc4d70923b07cdd9255cbb",
+          "a953a40cd4324adeaaa65e13c5ed98ea"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 12,
+        "checkpoints": 35
+      }
+    },
+    {
+      "nota": "conversación 01/02 DESPUÉS del reinicio",
+      "pedido": "GET /conversations/e2e-conversacion-final",
+      "body": null,
+      "status": 200,
+      "ms": 54.6,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-final",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+            "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+            "respuesta": "Para la ingesta masiva en Caudal, la documentación recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote]. Cabe notar que el valor por defecto configurado en el sistema es de 500 eventos [caudal-instalacion › Configuración con CaudalConfig].\n\nBasado en la recomendación de 5.000 eventos por lote, los cálculos realizados por el analista son los siguientes:\n\n*   **Cantidad de lotes:** Se requieren **400 lotes** para procesar 2.000.000 de eventos (operación: 2.000.000 / 5.000).\n*   **Tiempo total de procesamiento:** Se estima un tiempo de **20 segundos** (o 0,33 minutos). Este cálculo considera 4 workers procesando 5 lotes por segundo cada uno, lo que resulta en una capacidad total de 20 lotes por segundo (operación: 400 lotes / 20 lotes por segundo).",
+            "fuentes": [
+              "caudal-changelog › Caudal 2.5",
+              "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+              "caudal-instalacion › Configuración con CaudalConfig",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:13:09+00:00"
+          },
+          {
+            "numero": 2,
+            "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-15T11:14:00+00:00"
+          }
+        ],
+        "jobs": [
+          "1c1ba8726ecc4d70923b07cdd9255cbb",
+          "a953a40cd4324adeaaa65e13c5ed98ea"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 12,
+        "checkpoints": 35
+      }
+    },
+    {
+      "nota": "el job crítico sigue pausado después del reinicio",
+      "pedido": "GET /tasks/487903891cda493e9e9201b2906edb29",
+      "body": null,
+      "status": 200,
+      "ms": 2.4,
+      "respuesta": {
+        "job_id": "487903891cda493e9e9201b2906edb29",
+        "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+        "status": "WAITING_APPROVAL",
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte.",
+        "publicar": false,
+        "created_at": "2026-10-15T11:14:02.768+00:00",
+        "updated_at": "2026-10-15T11:14:54.485+00:00",
+        "started_at": "2026-10-15T11:14:02.770+00:00",
+        "finished_at": null,
+        "resultado": null,
+        "error": null,
+        "aprobacion_pendiente": {
+          "accion": "publicar_reporte",
+          "motivos": [
+            "La pregunta pide una acción hacia afuera ('publica'): se ejecutaría 'publicar_reporte'."
+          ],
+          "borrador": "**Reporte para el equipo de soporte: Error CAU-417**\n\nEn relación con la consulta sobre el código de error CAU-417 en Caudal, se informa lo siguiente:\n\n*   **Significado y solución:** Actualmente, la documentación oficial no contiene la descripción completa ni el procedimiento de resolución para este error. El fragmento disponible en la fuente [caudal-errores › Códigos de error CAU] se interrumpe abruptamente al mencionar *\"el esquema de un\"*, impidiendo determinar el significado técnico o los pasos a seguir.\n\n**Estado de la solicitud:** El requerimiento queda **sin resolver** debido a la falta de información en la documentación técnica disponible. Se recomienda escalar esta incidencia al equipo de desarrollo o documentación para completar la entrada correspondiente en el manual de errores.",
+          "como_responder": "POST /tasks/{job_id}/approve con {\"aprobado\": true|false, \"comentario\": \"...\", \"revisor\": \"...\"}"
+        },
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": null,
+          "latencia_ejecucion_s": 51.714,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 7,
+          "tokens_entrada": 12015,
+          "tokens_salida": 569,
+          "tokens_totales": 12584,
+          "costo_estimado_usd": 0.0048359,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 1628,
+              "tokens_salida": 268,
+              "costo_estimado_usd": 0.0011584
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 4,
+              "tokens_entrada": 9925,
+              "tokens_salida": 133,
+              "costo_estimado_usd": 0.00331
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 462,
+              "tokens_salida": 168,
+              "costo_estimado_usd": 0.0003675
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:14:02.768+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:14:02.770+00:00",
+            "por": null
+          },
+          {
+            "status": "WAITING_APPROVAL",
+            "t": "2026-10-15T11:14:54.485+00:00",
+            "por": null
+          }
+        ]
+      }
+    },
+    {
+      "nota": "",
+      "pedido": "POST /tasks/487903891cda493e9e9201b2906edb29/approve",
+      "body": {
+        "aprobado": true,
+        "comentario": "Revisado: las fuentes están citadas.",
+        "revisor": "ana"
+      },
+      "status": 202,
+      "ms": 3.3,
+      "respuesta": {
+        "job_id": "487903891cda493e9e9201b2906edb29",
+        "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+        "status": "PENDING",
+        "aprobado": true,
+        "links": {
+          "estado": "/tasks/487903891cda493e9e9201b2906edb29",
+          "conversacion": "/conversations/2608a82de5bc42c2b41f3c7881f1aa72",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/487903891cda493e9e9201b2906edb29",
+      "status": 200,
+      "respuesta": {
+        "job_id": "487903891cda493e9e9201b2906edb29",
+        "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+        "status": "DONE",
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte.",
+        "publicar": false,
+        "created_at": "2026-10-15T11:14:02.768+00:00",
+        "updated_at": "2026-10-15T11:15:03.403+00:00",
+        "started_at": "2026-10-15T11:14:02.770+00:00",
+        "finished_at": "2026-10-15T11:15:03.403+00:00",
+        "resultado": {
+          "respuesta": "**Reporte para el equipo de soporte: Error CAU-417**\n\nEn relación con la consulta sobre el código de error CAU-417 en Caudal, se informa lo siguiente:\n\n*   **Significado y solución:** Actualmente, la documentación oficial no contiene la descripción completa ni el procedimiento de resolución para este error. El fragmento disponible en la fuente [caudal-errores › Códigos de error CAU] se interrumpe abruptamente al mencionar *\"el esquema de un\"*, impidiendo determinar el significado técnico o los pasos a seguir.\n\n**Estado de la solicitud:** El requerimiento queda **sin resolver** debido a la falta de información en la documentación técnica disponible. Se recomienda escalar esta incidencia al equipo de desarrollo o documentación para completar la entrada correspondiente en el manual de errores.",
+          "fuentes": [
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Códigos de error CAU",
+              "chunk_id": "caudal-errores-p1-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.016393,
+              "score_vector": 0.709374,
+              "score_bm25": 5.704682,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Diagnóstico de problemas de rendimiento y memoria",
+              "chunk_id": "caudal-errores-p3-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.016129,
+              "score_vector": 0.578696,
+              "score_bm25": 1.756124,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Reintentos y cola de errores",
+              "chunk_id": "caudal-errores-p2-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.016001,
+              "score_vector": 0.567557,
+              "score_bm25": 2.364358,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-instalacion",
+              "seccion": "Primer pipeline de ejemplo",
+              "chunk_id": "caudal-instalacion-p3-c0",
+              "titulo": "Instalación y configuración de Caudal",
+              "score": 0.015268,
+              "score_vector": 0.530497,
+              "score_bm25": 0.658917,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-seguridad",
+              "seccion": "Secretos con Bóveda",
+              "chunk_id": "caudal-seguridad-p1-c0",
+              "titulo": "Seguridad y manejo de secretos",
+              "score": 0.015268,
+              "score_vector": 0.524289,
+              "score_bm25": 0.67542,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-seguridad",
+              "seccion": "Auditoría y datos personales",
+              "chunk_id": "caudal-seguridad-p3-c0",
+              "titulo": "Seguridad y manejo de secretos",
+              "score": 0.007812,
+              "score_vector": 0.479559,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            },
+            {
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Perfilado con caudal-prof",
+              "chunk_id": "caudal-rendimiento-p3-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.007692,
+              "score_vector": 0.479133,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            }
+          ],
+          "contribuciones": [
+            {
+              "agente": "researcher",
+              "paso": 1,
+              "estado": "ok",
+              "tarea": "Busca en la documentación oficial de Caudal el significado y la solución asociada al código de error CAU-417, incluyendo la fuente correspondiente.",
+              "resultado": "- **Significado y solución de CAU-417**: El fragmento disponible se corta al mencionar que *\"el esquema de un\"*, por lo que la descripción completa y su solución asociada no figuran en la documentación [caudal-errores › Códigos de error CAU].",
+              "fuentes": [
+                "caudal-errores › Códigos de error CAU",
+                "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+                "caudal-errores › Reintentos y cola de errores",
+                "caudal-instalacion › Primer pipeline de ejemplo",
+                "caudal-seguridad › Secretos con Bóveda",
+                "caudal-seguridad › Auditoría y datos personales",
+                "caudal-rendimiento › Perfilado con caudal-prof"
+              ],
+              "herramientas": [
+                "buscar_documentacion",
+                "buscar_documentacion",
+                "buscar_documentacion"
+              ]
+            }
+          ],
+          "ruta_supervisor": [
+            "researcher",
+            "FINISH"
+          ],
+          "turno": 1,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [
+            "La pregunta pide una acción hacia afuera ('publica'): se ejecutaría 'publicar_reporte'."
+          ],
+          "aprobacion": {
+            "aprobado": true,
+            "comentario": "Revisado: las fuentes están citadas.",
+            "revisor": "ana",
+            "fecha": "2026-10-15T11:15:03+00:00"
+          },
+          "reporte_publicado": "final:reporte:487903891cda493e9e9201b2906edb29"
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": {
+          "aprobado": true,
+          "comentario": "Revisado: las fuentes están citadas.",
+          "revisor": "ana"
+        },
+        "metricas": {
+          "latencia_total_s": 60.635,
+          "latencia_ejecucion_s": 51.727,
+          "espera_aprobacion_s": 8.902,
+          "corridas": 2,
+          "llamadas_llm": 7,
+          "tokens_entrada": 12015,
+          "tokens_salida": 569,
+          "tokens_totales": 12584,
+          "costo_estimado_usd": 0.0048359,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 1628,
+              "tokens_salida": 268,
+              "costo_estimado_usd": 0.0011584
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 4,
+              "tokens_entrada": 9925,
+              "tokens_salida": 133,
+              "costo_estimado_usd": 0.00331
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 462,
+              "tokens_salida": 168,
+              "costo_estimado_usd": 0.0003675
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:14:02.768+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:14:02.770+00:00",
+            "por": null
+          },
+          {
+            "status": "WAITING_APPROVAL",
+            "t": "2026-10-15T11:14:54.485+00:00",
+            "por": null
+          },
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:15:03.387+00:00",
+            "por": "approve"
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:15:03.388+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-15T11:15:03.403+00:00",
+            "por": null
+          }
+        ]
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "03 HITL aprobada + reinicio",
+    "job_id": "487903891cda493e9e9201b2906edb29",
+    "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → WAITING_APPROVAL → PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 7,
+    "fuera_de_dominio": false,
+    "reporte_publicado": "final:reporte:487903891cda493e9e9201b2906edb29",
+    "latencia_total_s": 60.635,
+    "latencia_ejecucion_s": 51.727,
+    "espera_aprobacion_s": 8.902,
+    "llamadas_llm": 7,
+    "tokens_entrada": 12015,
+    "tokens_salida": 569,
+    "costo_estimado_usd": 0.0048359,
+    "error": null,
+    "llamadas_llm_antes_de_aprobar": 7,
+    "llamadas_llm_al_final": 7,
+    "reiniciado": true,
+    "segundos_hasta_health": 6.0,
+    "turnos_antes": 2,
+    "turnos_despues": 2,
+    "estado_despues_del_reinicio": "WAITING_APPROVAL"
+  }
+}

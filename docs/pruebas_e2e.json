@@ -1,0 +1,161 @@
+[
+  {
+    "escenario": "01 RAG + cálculo",
+    "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+    "thread_id": "e2e-conversacion-final",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "analyst",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 6,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 112.678,
+    "latencia_ejecucion_s": 112.667,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 9,
+    "tokens_entrada": 10691,
+    "tokens_salida": 1029,
+    "costo_estimado_usd": 0.00521255,
+    "error": null
+  },
+  {
+    "escenario": "02 seguimiento (mismo thread_id)",
+    "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+    "thread_id": "e2e-conversacion-final",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "analyst",
+      "FINISH"
+    ],
+    "turno": 2,
+    "fuentes": 0,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 34.727,
+    "latencia_ejecucion_s": 34.705,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 5,
+    "tokens_entrada": 5012,
+    "tokens_salida": 566,
+    "costo_estimado_usd": 0.00252565,
+    "error": null
+  },
+  {
+    "escenario": "03 HITL aprobada + reinicio",
+    "job_id": "487903891cda493e9e9201b2906edb29",
+    "thread_id": "2608a82de5bc42c2b41f3c7881f1aa72",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → WAITING_APPROVAL → PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 7,
+    "fuera_de_dominio": false,
+    "reporte_publicado": "final:reporte:487903891cda493e9e9201b2906edb29",
+    "latencia_total_s": 60.635,
+    "latencia_ejecucion_s": 51.727,
+    "espera_aprobacion_s": 8.902,
+    "llamadas_llm": 7,
+    "tokens_entrada": 12015,
+    "tokens_salida": 569,
+    "costo_estimado_usd": 0.0048359,
+    "error": null,
+    "llamadas_llm_antes_de_aprobar": 7,
+    "llamadas_llm_al_final": 7,
+    "reiniciado": true,
+    "segundos_hasta_health": 6.0,
+    "turnos_antes": 2,
+    "turnos_despues": 2,
+    "estado_despues_del_reinicio": "WAITING_APPROVAL"
+  },
+  {
+    "escenario": "03b seguimiento post-reinicio",
+    "job_id": "3049339b876241e284b0ad8f25bc3be1",
+    "thread_id": "e2e-conversacion-final",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "FINISH"
+    ],
+    "turno": 3,
+    "fuentes": 0,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 34.115,
+    "latencia_ejecucion_s": 34.094,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 2,
+    "tokens_entrada": 1840,
+    "tokens_salida": 213,
+    "costo_estimado_usd": 0.00097025,
+    "error": null
+  },
+  {
+    "escenario": "04 HITL rechazada",
+    "job_id": "2798d055f81e4dcd84d930276c0aa8b1",
+    "thread_id": "eda658cffb134e7285b760bff6d1c337",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → WAITING_APPROVAL → PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 5,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 51.37,
+    "latencia_ejecucion_s": 50.587,
+    "espera_aprobacion_s": 0.771,
+    "llamadas_llm": 6,
+    "tokens_entrada": 7163,
+    "tokens_salida": 472,
+    "costo_estimado_usd": 0.00321425,
+    "error": null
+  },
+  {
+    "escenario": "05 fuera de dominio",
+    "job_id": "ff691bff292b4c5abcfaa6be058e66b9",
+    "thread_id": "b39a68157adb43e0bfa8225660d991ef",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 0,
+    "fuera_de_dominio": true,
+    "reporte_publicado": null,
+    "latencia_total_s": 10.761,
+    "latencia_ejecucion_s": 10.748,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 1,
+    "tokens_entrada": 703,
+    "tokens_salida": 102,
+    "costo_estimado_usd": 0.0004659,
+    "error": null
+  },
+  {
+    "escenario": "06 validación y errores",
+    "status": "OK",
+    "codigos": [
+      422,
+      422,
+      422,
+      422,
+      422,
+      422,
+      404,
+      404,
+      200
+    ]
+  }
+]

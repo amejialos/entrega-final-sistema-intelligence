@@ -1,0 +1,25 @@
+$ uv run python -m scripts.ingest --solo-indice
+INFO app.rag.ingesta: El índice 'pre-entrega-4' ya existe (dimension=1536, metric=cosine): no se recrea.
+Índice pre-entrega-4: ya existía · namespace caudal-docs: 21 vectores
+
+$ uv run python -m scripts.ingest   # segunda corrida: mismos ids, no duplica
+INFO app.rag.ingesta: El índice 'pre-entrega-4' ya existe (dimension=1536, metric=cosine): no se recrea.
+INFO httpx2: HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/embeddings "HTTP/1.1 200 OK"
+INFO __main__: Ingesta terminada
+{
+"indice": "pre-entrega-4",
+"namespace": "caudal-docs",
+"indice_creado": false,
+"chunks": 21,
+"documentos": [
+  "caudal-api-flujos",
+  "caudal-changelog",
+  "caudal-conectores",
+  "caudal-errores",
+  "caudal-instalacion",
+  "caudal-rendimiento",
+  "caudal-seguridad"
+],
+"vectores_visibles": 21,
+"segundos": 4.4
+}

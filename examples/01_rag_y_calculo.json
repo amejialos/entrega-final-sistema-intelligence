@@ -1,0 +1,261 @@
+{
+  "escenario": "01_rag_y_calculo",
+  "descripcion": "Pregunta que necesita la documentación (RAG) y un cálculo; abre la conversación del 02.",
+  "fecha": "2026-10-15T08:11:16",
+  "pasos": [
+    {
+      "nota": "202 al instante",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+        "thread_id": "e2e-conversacion-final"
+      },
+      "status": 202,
+      "ms": 10.8,
+      "respuesta": {
+        "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+        "thread_id": "e2e-conversacion-final",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/1c1ba8726ecc4d70923b07cdd9255cbb",
+          "conversacion": "/conversations/e2e-conversacion-final",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "409: conversación ocupada",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "¿Y con 8 workers cuánto tarda?",
+        "thread_id": "e2e-conversacion-final"
+      },
+      "status": 409,
+      "ms": 34.6,
+      "respuesta": {
+        "detail": "La conversación e2e-conversacion-final tiene un job en curso (1c1ba8726ecc4d70923b07cdd9255cbb). Esperá a que termine (o aprobalo) y volvé a enviar."
+      }
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/1c1ba8726ecc4d70923b07cdd9255cbb",
+      "status": 200,
+      "respuesta": {
+        "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+        "thread_id": "e2e-conversacion-final",
+        "status": "DONE",
+        "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+        "publicar": false,
+        "created_at": "2026-10-15T11:11:16.589+00:00",
+        "updated_at": "2026-10-15T11:13:09.267+00:00",
+        "started_at": "2026-10-15T11:11:16.595+00:00",
+        "finished_at": "2026-10-15T11:13:09.267+00:00",
+        "resultado": {
+          "respuesta": "Para la ingesta masiva en Caudal, la documentación recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote]. Cabe notar que el valor por defecto configurado en el sistema es de 500 eventos [caudal-instalacion › Configuración con CaudalConfig].\n\nBasado en la recomendación de 5.000 eventos por lote, los cálculos realizados por el analista son los siguientes:\n\n*   **Cantidad de lotes:** Se requieren **400 lotes** para procesar 2.000.000 de eventos (operación: 2.000.000 / 5.000).\n*   **Tiempo total de procesamiento:** Se estima un tiempo de **20 segundos** (o 0,33 minutos). Este cálculo considera 4 workers procesando 5 lotes por segundo cada uno, lo que resulta en una capacidad total de 20 lotes por segundo (operación: 400 lotes / 20 lotes por segundo).",
+          "fuentes": [
+            {
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Backpressure y tamaño de lote",
+              "chunk_id": "caudal-rendimiento-p2-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.016393,
+              "score_vector": 0.723844,
+              "score_bm25": 13.899958,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-changelog",
+              "seccion": "Caudal 2.5",
+              "chunk_id": "caudal-changelog-p2-c0",
+              "titulo": "Historial de versiones de Caudal",
+              "score": 0.015877,
+              "score_vector": 0.594884,
+              "score_bm25": 1.319066,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-instalacion",
+              "seccion": "Configuración con CaudalConfig",
+              "chunk_id": "caudal-instalacion-p2-c0",
+              "titulo": "Instalación y configuración de Caudal",
+              "score": 0.015505,
+              "score_vector": 0.577062,
+              "score_bm25": 2.232966,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-conectores",
+              "seccion": "ConectorPostgres: fuente y sumidero de base de datos",
+              "chunk_id": "caudal-conectores-p2-c0",
+              "titulo": "Conectores de fuentes y sumideros",
+              "score": 0.015388,
+              "score_vector": 0.581391,
+              "score_bm25": 2.151079,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Diagnóstico de problemas de rendimiento y memoria",
+              "chunk_id": "caudal-errores-p3-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.008065,
+              "score_vector": 0.592612,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            },
+            {
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Paralelismo y workers",
+              "chunk_id": "caudal-rendimiento-p1-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.007937,
+              "score_vector": 0.601605,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            }
+          ],
+          "contribuciones": [
+            {
+              "agente": "researcher",
+              "paso": 1,
+              "estado": "ok",
+              "tarea": "Busca en la documentación oficial de Caudal cuál es el tamaño de lote recomendado para ingesta masiva y devuelve el dato junto con su fuente.",
+              "resultado": "* **Tamaño de lote recomendado para aumentar el throughput (lotes grandes):** 5000 eventos o más. [caudal-rendimiento › Backpressure y tamaño de lote]\n* **Valor por defecto de tamaño de lote (`tamano_lote`):** 500 eventos. [caudal-instalacion › Configuración con CaudalConfig]",
+              "fuentes": [
+                "caudal-rendimiento › Backpressure y tamaño de lote",
+                "caudal-changelog › Caudal 2.5",
+                "caudal-instalacion › Configuración con CaudalConfig",
+                "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+                "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+                "caudal-rendimiento › Paralelismo y workers"
+              ],
+              "herramientas": [
+                "buscar_documentacion",
+                "buscar_documentacion"
+              ]
+            },
+            {
+              "agente": "analyst",
+              "paso": 2,
+              "estado": "ok",
+              "tarea": "Con base en el tamaño de lote recomendado de 5000 eventos obtenido por el investigador, calcula cuántos lotes se necesitan para 2.000.000 de eventos. Luego, calcula el tiempo total necesario para procesarlos sabiendo que hay 4 workers y cada uno procesa 5 lotes por segundo.",
+              "resultado": "Para procesar 2.000.000 de eventos con un tamaño de lote de 5.000:\n\n*   **Cantidad de lotes:** 400 (operación: 2.000.000 / 5.000).\n*   **Tiempo total necesario:** 20 segundos (o 0,33 minutos).\n\n**Supuestos:** Se utilizaron 4 workers procesando 5 lotes por segundo cada uno, según lo indicado en la tarea.",
+              "fuentes": [
+                "calcular",
+                "estimar_tiempo_procesamiento"
+              ],
+              "herramientas": [
+                "calcular",
+                "estimar_tiempo_procesamiento"
+              ]
+            }
+          ],
+          "ruta_supervisor": [
+            "researcher",
+            "analyst",
+            "FINISH"
+          ],
+          "turno": 1,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [],
+          "aprobacion": null,
+          "reporte_publicado": null
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": 112.678,
+          "latencia_ejecucion_s": 112.667,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 9,
+          "tokens_entrada": 10691,
+          "tokens_salida": 1029,
+          "tokens_totales": 11720,
+          "costo_estimado_usd": 0.00521255,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 3,
+              "tokens_entrada": 2890,
+              "tokens_salida": 458,
+              "costo_estimado_usd": 0.002012
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 3,
+              "tokens_entrada": 5116,
+              "tokens_salida": 138,
+              "costo_estimado_usd": 0.0018798
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 3,
+              "tokens_entrada": 2685,
+              "tokens_salida": 433,
+              "costo_estimado_usd": 0.00132075
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-15T11:11:16.589+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-15T11:11:16.595+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-15T11:13:09.267+00:00",
+            "por": null
+          }
+        ]
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "01 RAG + cálculo",
+    "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+    "thread_id": "e2e-conversacion-final",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "analyst",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 6,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 112.678,
+    "latencia_ejecucion_s": 112.667,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 9,
+    "tokens_entrada": 10691,
+    "tokens_salida": 1029,
+    "costo_estimado_usd": 0.00521255,
+    "error": null
+  }
+}
