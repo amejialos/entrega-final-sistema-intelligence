@@ -1,12 +1,12 @@
 {
-  "fecha": "2026-10-15T08:16:54",
+  "fecha": "2026-10-15T08:26:18",
   "proyecto": "entrega-final",
-  "trazas_en_proyecto": 10,
-  "costo_total_usd": 0.0172245,
-  "tokens_totales": 40375.0,
+  "trazas_en_proyecto": 12,
+  "costo_total_usd": 0.0199142,
+  "tokens_totales": 45936.0,
   "latencia_ms": {
     "p50": 22418.1855,
-    "p95": 85232.50170000005
+    "p95": 87913.64880000005
   },
   "trazas": [
     {
@@ -148,6 +148,34 @@
       "tokens_entrada": 703,
       "tokens_salida": 102,
       "costo_usd": 0.000466
+    },
+    {
+      "trace_id": "c6e81726ef490d0c0f3fc53b3fe5ca1b",
+      "nombre": "orquestador job=ae73baec (ejecutar)",
+      "job_id": "ae73baec47c24a749e4c413af9cb8a37",
+      "thread_id": "a8939856ede14dfabc8c2b31bda40c6b",
+      "fase": "ejecutar",
+      "inicio": "2026-10-15T11:24:24.157011+00:00",
+      "estado": "OK",
+      "latencia_s": 67.67,
+      "llamadas_llm": 5,
+      "tokens_entrada": 5018,
+      "tokens_salida": 543,
+      "costo_usd": 0.00269
+    },
+    {
+      "trace_id": "852a8f796b19bcaa5fc0eb677342efe5",
+      "nombre": "orquestador job=ae73baec (reanudar)",
+      "job_id": "ae73baec47c24a749e4c413af9cb8a37",
+      "thread_id": "a8939856ede14dfabc8c2b31bda40c6b",
+      "fase": "reanudar",
+      "inicio": "2026-10-15T11:25:42.259841+00:00",
+      "estado": "OK",
+      "latencia_s": 0.05,
+      "llamadas_llm": 0,
+      "tokens_entrada": 0,
+      "tokens_salida": 0,
+      "costo_usd": 0.0
     }
   ],
   "por_job": {
@@ -186,20 +214,26 @@
       "tokens_entrada": 703.0,
       "tokens_salida": 102.0,
       "llamadas_llm": 1.0
+    },
+    "ae73baec47c24a749e4c413af9cb8a37": {
+      "costo_usd": 0.00269,
+      "tokens_entrada": 5018.0,
+      "tokens_salida": 543.0,
+      "llamadas_llm": 5.0
     }
   },
   "por_nodo": {
     "supervisor": {
-      "llamadas_llm": 11.0,
-      "tokens_entrada": 10189.0,
-      "tokens_salida": 1518.0,
-      "costo_usd": 0.006852
+      "llamadas_llm": 13.0,
+      "tokens_entrada": 11835.0,
+      "tokens_salida": 1779.0,
+      "costo_usd": 0.007998
     },
     "researcher": {
-      "llamadas_llm": 10.0,
-      "tokens_entrada": 20171.0,
-      "tokens_salida": 406.0,
-      "costo_usd": 0.007066
+      "llamadas_llm": 12.0,
+      "tokens_entrada": 23079.0,
+      "tokens_salida": 538.0,
+      "costo_usd": 0.008269
     },
     "analyst": {
       "llamadas_llm": 4.0,
@@ -208,15 +242,15 @@
       "costo_usd": 0.001509
     },
     "synthesizer": {
-      "llamadas_llm": 5.0,
-      "tokens_entrada": 3039.0,
-      "tokens_salida": 692.0,
-      "costo_usd": 0.001798
+      "llamadas_llm": 6.0,
+      "tokens_entrada": 3503.0,
+      "tokens_salida": 842.0,
+      "costo_usd": 0.002139
     }
   },
   "rag": {
-    "spans_retriever": 9,
-    "latencia_media_ms": 1890.0,
+    "spans_retriever": 10,
+    "latencia_media_ms": 1858.0,
     "latencia_max_ms": 2380.3
   },
   "control_cruzado": [
@@ -242,13 +276,13 @@
     },
     {
       "escenario": "03 HITL aprobada + reinicio",
-      "job_id": "487903891cda493e9e9201b2906edb29",
-      "api_costo_usd": 0.0048359,
-      "phoenix_costo_usd": 0.004836,
-      "api_tokens": "12015/569",
-      "phoenix_tokens": "12015/569",
-      "api_llamadas": 7,
-      "phoenix_llamadas": 7
+      "job_id": "ae73baec47c24a749e4c413af9cb8a37",
+      "api_costo_usd": 0.0026897,
+      "phoenix_costo_usd": 0.00269,
+      "api_tokens": "5018/543",
+      "phoenix_tokens": "5018/543",
+      "api_llamadas": 5,
+      "phoenix_llamadas": 5
     },
     {
       "escenario": "03b seguimiento post-reinicio",

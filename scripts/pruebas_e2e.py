@@ -172,7 +172,7 @@ async def e03(client: httpx.AsyncClient, reiniciar: bool = True) -> dict[str, An
     llamadas_antes = (pausado.get("metricas") or {}).get("llamadas_llm")
     reinicio: dict[str, Any] = {"reiniciado": False}
     if reiniciar and pausado["status"] == "WAITING_APPROVAL":
-        antes = (await reg.pedir("GET", f"/conversations/{HILO}", nota="conversación 01/02 ANTES del reinicio")).json()
+        antes = (await reg.pedir("GET", f"/conversations/{HILO}", nota="conversación ANTES del reinicio")).json()
         print("  $ docker compose restart api redis", flush=True)
         t0 = time.monotonic()
         proceso = await asyncio.create_subprocess_exec("docker", "compose", "restart", "api", "redis", cwd=RAIZ)
@@ -183,7 +183,7 @@ async def e03(client: httpx.AsyncClient, reiniciar: bool = True) -> dict[str, An
             "segundos_hasta_health": round(time.monotonic() - t0, 1),
             "turnos_antes": len(antes.get("turnos", [])),
         }
-        despues = (await reg.pedir("GET", f"/conversations/{HILO}", nota="conversación 01/02 DESPUÉS del reinicio")).json()
+        despues = (await reg.pedir("GET", f"/conversations/{HILO}", nota="conversación DESPUÉS del reinicio")).json()
         reinicio["turnos_despues"] = len(despues.get("turnos", []))
         sigue = (await reg.pedir("GET", f"/tasks/{job_id}", nota="el job crítico sigue pausado después del reinicio")).json()
         reinicio["estado_despues_del_reinicio"] = sigue["status"]
@@ -315,7 +315,7 @@ def a_markdown(resumenes: list[dict[str, Any]]) -> str:
             "",
             f"- `docker compose restart api redis` con el job `{reinicio['job_id'][:8]}` en WAITING_APPROVAL; la API volvió a "
             f"responder `/health` en {reinicio['segundos_hasta_health']} s.",
-            f"- La conversación de las pruebas 01/02 tenía {reinicio['turnos_antes']} turnos antes y {reinicio['turnos_despues']} después.",
+            f"- La conversación `{HILO}` (pruebas 01, 02 y 03b) tenía {reinicio['turnos_antes']} turnos antes y {reinicio['turnos_despues']} después.",
             f"- El job siguió en `{reinicio['estado_despues_del_reinicio']}`; aprobado después del reinicio terminó `{reinicio['status']}` "
             f"(publicado en `{reinicio['reporte_publicado']}`) con {reinicio['llamadas_llm_al_final']} llamadas al LLM en total, "
             f"las mismas {reinicio['llamadas_llm_antes_de_aprobar']} de antes de la pausa: la reanudación salió del checkpoint.",
