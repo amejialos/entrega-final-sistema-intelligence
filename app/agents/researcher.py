@@ -21,7 +21,12 @@ from app.graph.state import OrchestratorState
 from app.rag.schemas import ConsultaRAG, ResultadoBusqueda
 
 NOMBRE = "researcher"
-MAX_CHARS_FRAGMENTO = 900  # recorte por fragmento: alcanza para el dato y no infla el contexto
+# Tope de caracteres por fragmento que lee el modelo. Los chunks del corpus miden entre 810 y
+# 1.962 caracteres: con 2.000 el modelo siempre lee el chunk COMPLETO. (En la PE7 el tope era 900
+# y cortaba 19 de 21 chunks: el dato de CAU-417 quedaba del otro lado del corte y el investigador
+# concluía "no figura en la documentación".) Si algún chunk futuro lo supera, el corte se marca.
+MAX_CHARS_FRAGMENTO = 2000
+MARCA_RECORTE = " [...fragmento recortado: buscá con términos más específicos si falta el dato]"
 
 PROMPT = """Sos el Agente Investigador de un equipo de análisis. Tu única fuente es la
 documentación oficial de la librería Caudal, que consultás con la herramienta
@@ -42,6 +47,12 @@ class Buscador(Protocol):
     """Lo que la herramienta necesita de la capa RAG (el `ServicioRAG` real o un fake)."""
 
     async def buscar(self, consulta: ConsultaRAG) -> ResultadoBusqueda: ...
+
+
+def recortar(texto: str, limite: int = MAX_CHARS_FRAGMENTO) -> str:
+    """El fragmento completo si entra; si no, cortado y MARCADO (para que el modelo no confunda
+    "no lo leí" con "no está en la documentación")."""
+    return texto if len(texto) <= limite else texto[:limite] + MARCA_RECORTE
 
 
 def _json(modelo: Any) -> str:
@@ -72,9 +83,7 @@ def crear_herramienta_busqueda(rag: Buscador, k: int = 5) -> BaseTool:
         salida = SalidaBusqueda(consulta=resultado.consulta, resultados=resultado.fragmentos)
         # Al modelo solo le llega la etiqueta de la fuente y el texto recortado; el artifact
         # conserva chunk_id y scores para la respuesta de la API.
-        contenido = _json(
-            {"resultados": [{"fuente": f.etiqueta, "contenido": f.contenido[:MAX_CHARS_FRAGMENTO]} for f in salida.resultados]}
-        )
+        contenido = _json({"resultados": [{"fuente": f.etiqueta, "contenido": recortar(f.contenido)} for f in salida.resultados]})
         return contenido, salida.model_dump()
 
     return buscar_documentacion

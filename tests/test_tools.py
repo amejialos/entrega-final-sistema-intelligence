@@ -164,3 +164,16 @@ async def test_buscar_sin_resultados_y_consulta_invalida():
     assert mensaje.artifact["error"] == "sin resultados"
     with pytest.raises(ValidationError):
         await herramienta.ainvoke({"consulta": "  "})
+
+
+def test_el_modelo_lee_los_chunks_completos_y_un_corte_queda_marcado():
+    """Regresión: con el tope de 900 caracteres de la PE7, el dato de CAU-417 (posición 874 de un
+    chunk de 1.765) quedaba cortado y el investigador respondía que no figuraba en la documentación."""
+    from app.agents.researcher import MARCA_RECORTE, MAX_CHARS_FRAGMENTO, recortar
+    from app.rag.corpus import load_chunks
+
+    chunks = load_chunks(chunk_size=2800, chunk_overlap=400, length_function=len)
+    assert max(len(c.page_content) for c in chunks) <= MAX_CHARS_FRAGMENTO
+    errores = next(c.page_content for c in chunks if "CAU-417" in c.page_content)
+    assert "esquema registrado" in recortar(errores)
+    assert recortar("x" * (MAX_CHARS_FRAGMENTO + 1)).endswith(MARCA_RECORTE)
