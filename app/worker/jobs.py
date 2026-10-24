@@ -6,6 +6,7 @@ Claves (con el prefijo `REDIS_PREFIJO`, por defecto `final`):
     final:job:{job_id}:eventos      lista con cada transición de estado y su hora
     final:job:{job_id}:pasos        lista con cada nodo del grafo que terminó (streaming del progreso)
     final:job:{job_id}:borrador     texto que va escribiendo el modelo de síntesis (streaming de tokens)
+    final:job:{job_id}:borrador:gen generación del borrador: sube cada vez que el modelo reintenta
     final:jobs                      sorted set por fecha de creación (GET /tasks)
     final:thread:{thread_id}:jobs   lista con los jobs (turnos) de una conversación
     final:thread:{thread_id}:activo el job que está usando la conversación ahora (candado)
@@ -153,16 +154,23 @@ class JobStore:
             await pipe.execute()
 
     async def agregar_borrador(self, job_id: str, texto: str, reiniciar: bool = False) -> None:
-        """Suma tokens al borrador de la respuesta. `reiniciar` lo vacía antes (reintento del modelo)."""
+        """Suma tokens al borrador de la respuesta. `reiniciar` lo vacía antes y sube la generación
+        (reintento del modelo): así el stream lo detecta aunque el texto nuevo sea más largo."""
+        clave = self._borrador(job_id)
         async with self.redis.pipeline(transaction=True) as pipe:
             if reiniciar:
-                pipe.delete(self._borrador(job_id))
-            pipe.append(self._borrador(job_id), texto)
-            pipe.expire(self._borrador(job_id), self.ttl)
+                pipe.delete(clave)
+                pipe.incr(f"{clave}:gen")
+                pipe.expire(f"{clave}:gen", self.ttl)
+            pipe.append(clave, texto)
+            pipe.expire(clave, self.ttl)
             await pipe.execute()
 
-    async def leer_borrador(self, job_id: str) -> str:
-        return await self.redis.get(self._borrador(job_id)) or ""
+    async def leer_borrador(self, job_id: str) -> tuple[str, int]:
+        """(texto, generación) del borrador."""
+        clave = self._borrador(job_id)
+        texto, generacion = await self.redis.mget(clave, f"{clave}:gen")
+        return texto or "", int(generacion or 0)
 
     async def tomar_aprobacion(self, job_id: str, decision: DecisionHumana) -> bool:
         """WAITING_APPROVAL -> PENDING de forma atómica (WATCH/MULTI). False si no estaba esperando."""

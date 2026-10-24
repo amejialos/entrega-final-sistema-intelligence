@@ -13,7 +13,7 @@ name: sistema-intelligence
 services:
   redis:
     # redis:8 trae los módulos JSON y Search que necesita langgraph-checkpoint-redis.
-    image: redis:8
+    image: redis:8.10.2
     ports:
       - "6379:6379"
     # AOF: cada escritura se persiste en disco; los checkpoints sobreviven a un reinicio.

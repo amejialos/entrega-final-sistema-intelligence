@@ -2,8 +2,9 @@
 
     POST /tasks                   crea un turno (PENDING), lo encola y responde 202 + job_id + thread_id
     GET  /tasks/{job_id}          estado: PENDING | RUNNING | WAITING_APPROVAL | DONE | FAILED (+ resultado y métricas)
+    GET  /tasks/{job_id}/stream   progreso en vivo por SSE: estados, nodos del grafo y tokens de la respuesta
     GET  /tasks                   últimos jobs
-    POST /tasks/{job_id}/approve  decisión humana para una tarea crítica pausada
+    POST /tasks/{job_id}/approve  decisión humana para una tarea crítica pausada (header X-Reviewer-Key)
     GET  /conversations/{id}      historial de la conversación (del checkpoint en Redis)
     POST /search                  búsqueda directa en la capa RAG
     GET  /health                  Redis responde, grafo y RAG cargados

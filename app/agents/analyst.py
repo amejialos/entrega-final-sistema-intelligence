@@ -77,7 +77,9 @@ def evaluar_expresion(expresion: str) -> float | int:
     except SyntaxError as exc:
         raise ExpresionInvalida(f"sintaxis inválida: {exc.msg}") from exc
 
-    def _acotado(valor: float | int) -> float | int:
+    def _acotado(valor: float | int | complex) -> float | int:
+        if isinstance(valor, complex):  # (-8) ** 0.5: Python devuelve un complejo, que no es un dato de Caudal
+            raise ExpresionInvalida("el resultado es un número complejo (raíz de un número negativo)")
         if abs(valor) > MAX_MAGNITUD:
             raise ExpresionInvalida(f"resultado demasiado grande (máximo 1e{len(str(MAX_MAGNITUD)) - 1})")
         return valor

@@ -198,3 +198,9 @@ def test_calcular_rechaza_resultados_desmesurados_sin_romper_el_job(expresion):
 def test_calcular_acepta_cuentas_grandes_pero_razonables():
     assert evaluar_expresion("2 ** 64") == 18446744073709551616
     assert evaluar_expresion("2000000 * 500 * 3600") == 3_600_000_000_000
+
+
+def test_calcular_rechaza_resultados_complejos_con_un_mensaje_claro():
+    with pytest.raises(ExpresionInvalida, match="número complejo"):
+        evaluar_expresion("(-8) ** 0.5")
+    assert "número complejo" in json.loads(calcular.invoke({"expresion": "(-8) ** 0.5"}))["error"]

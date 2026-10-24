@@ -1,5 +1,5 @@
 # Imagen de la API (incluye el worker embebido). La levanta `docker compose up --build`.
-FROM python:3.12-slim
+FROM python:3.12.15-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.12.5 /uv /uvx /bin/
 

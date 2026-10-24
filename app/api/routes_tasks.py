@@ -84,32 +84,40 @@ def _sse(evento: str, datos: str) -> str:
 
 
 async def _eventos_sse(job_id: str, store: JobStore, request: Request) -> AsyncIterator[str]:
-    """Transmite tokens de la síntesis, estados y nodos nuevos hasta DONE/FAILED o WAITING_APPROVAL."""
-    vistos_estados = vistos_pasos = vistos_borrador = 0
+    """Transmite estados, nodos y tokens de la síntesis hasta DONE/FAILED o WAITING_APPROVAL.
+
+    En cada vuelta lee el job y el borrador de Redis y emite solo lo nuevo, en orden: estados y nodos
+    por hora, y el texto nuevo justo antes del nodo `synthesizer` (que "termina" después de escribirlo)
+    o, si ese nodo todavía no terminó, al final de la tanda.
+    """
+    vistos_estados = vistos_pasos = vistos_borrador = generacion_vista = 0
     sin_novedades_s = 0.0
     while True:
         job = await store.get(job_id)
         if job is None:  # venció el TTL o se borró mientras se transmitía
             return
-        # Primero el texto nuevo de la síntesis: el nodo `synthesizer` "termina" después de escribirlo.
-        borrador = await store.leer_borrador(job_id)
-        if len(borrador) < vistos_borrador:  # el modelo reintentó y el borrador volvió a empezar
-            yield _sse("reinicio", "{}")
-            vistos_borrador = 0
-        texto_nuevo = borrador[vistos_borrador:]
-        if texto_nuevo:
-            yield _sse("token", json.dumps({"texto": texto_nuevo}, ensure_ascii=False))
+        borrador, generacion = await store.leer_borrador(job_id)
+        texto: list[str] = []
+        if generacion != generacion_vista:  # el modelo reintentó: el borrador volvió a empezar
+            texto.append(_sse("reinicio", "{}"))
+            generacion_vista, vistos_borrador = generacion, 0
+        if len(borrador) > vistos_borrador:
+            texto.append(_sse("token", json.dumps({"texto": borrador[vistos_borrador:]}, ensure_ascii=False)))
             vistos_borrador = len(borrador)
-        nuevos = [("estado", e.t, e.model_dump_json(exclude_none=True)) for e in job.eventos[vistos_estados:]]
-        nuevos += [("nodo", p.t, p.model_dump_json(exclude_none=True)) for p in job.pasos[vistos_pasos:]]
+
+        nuevos = [("estado", e.t, e.model_dump_json(exclude_none=True), None) for e in job.eventos[vistos_estados:]]
+        nuevos += [("nodo", p.t, p.model_dump_json(exclude_none=True), p.nodo) for p in job.pasos[vistos_pasos:]]
         vistos_estados, vistos_pasos = len(job.eventos), len(job.pasos)
-        for evento, _, datos in sorted(nuevos, key=lambda n: n[1]):
-            yield _sse(evento, datos)
+        tanda = [(_sse(evento, datos), nodo) for evento, _, datos, nodo in sorted(nuevos, key=lambda n: n[1])]
+        corte = next((n for n, (_, nodo) in enumerate(tanda) if nodo == "synthesizer"), len(tanda))
+        for bloque in [b for b, _ in tanda[:corte]] + texto + [b for b, _ in tanda[corte:]]:
+            yield bloque
+
         if job.status in CORTES_STREAM:
             # El último evento trae el job completo (resultado o lo que hay que aprobar).
             yield _sse("fin", job.model_dump_json(exclude={"eventos", "pasos"}))
             return
-        sin_novedades_s = 0.0 if nuevos or texto_nuevo else sin_novedades_s + INTERVALO_STREAM_S
+        sin_novedades_s = 0.0 if tanda or texto else sin_novedades_s + INTERVALO_STREAM_S
         if sin_novedades_s >= LATIDO_S:
             sin_novedades_s = 0.0
             yield ": latido\n\n"
@@ -126,14 +134,20 @@ async def _eventos_sse(job_id: str, store: JobStore, request: Request) -> AsyncI
     responses={
         200: {
             "content": {"text/event-stream": {}},
-            "description": "Eventos `estado` (EventoEstado), `nodo` (EventoNodo) y un `fin` final con el JobRecord.",
+            "description": (
+                "Server-Sent Events: `estado` (EventoEstado), `nodo` (EventoNodo), `token` ({texto}: lo nuevo de la "
+                "respuesta de la síntesis), `reinicio` (el modelo reintentó: descartar el texto recibido) y un `fin` "
+                "con el JobRecord, después del cual el servidor cierra. El cliente tiene que cerrar al recibir `fin` "
+                "(un EventSource que reconecta volvería a recibir todo)."
+            ),
         },
         404: {"model": ErrorOut},
     },
 )
 async def stream_tarea(job_id: JobId, recursos: RecursosDep, request: Request) -> StreamingResponse:
-    """Alternativa al polling: una conexión que recibe cada cambio de estado y cada nodo del grafo que termina
-    (supervisor, investigador, analista, síntesis...). Se cierra sola al terminar o al pausarse para aprobación.
+    """Alternativa al polling: una conexión que recibe cada cambio de estado, cada nodo del grafo que termina
+    (supervisor, investigador, analista, síntesis...) y el texto de la respuesta mientras se escribe. Se cierra
+    sola al terminar o al pausarse para aprobación.
 
     Probalo con `curl -N localhost:8000/tasks/{job_id}/stream`.
     """

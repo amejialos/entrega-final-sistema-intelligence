@@ -71,3 +71,41 @@ async def test_stream_transmite_los_tokens_de_la_sintesis_antes_de_que_termine(p
     assert texto == job["resultado"]["respuesta"] == RESPUESTA
     tipos = [t if t != "nodo" else f"nodo:{d['nodo']}" for t, d in eventos]
     assert tipos.index("token") < tipos.index("nodo:synthesizer")  # se ve mientras se escribe
+
+
+class _PedidoConectado:
+    async def is_disconnected(self) -> bool:
+        return False
+
+
+async def test_un_reintento_que_escribe_mas_texto_igual_reinicia_el_borrador():
+    """El largo no alcanza para detectar un reintento: el borrador lleva un número de generación."""
+    import fakeredis
+
+    from app.api.routes_tasks import _eventos_sse
+    from app.worker.jobs import JobStore
+    from app.worker.models import Estado
+
+    redis = fakeredis.FakeAsyncRedis(decode_responses=True)
+    store = JobStore(redis)
+    job = await store.crear(PREGUNTA)
+    await store.agregar_borrador(job.job_id, "Prim")
+    eventos = _eventos_sse(job.job_id, store, _PedidoConectado())
+    primeros = [await anext(eventos), await anext(eventos)]
+    assert primeros[0].startswith("event: estado") and '"Prim"' in primeros[1]  # estado PENDING primero
+
+    await store.agregar_borrador(job.job_id, "Un texto más largo que el primero", reiniciar=True)
+    await store.actualizar(job.job_id, Estado.DONE)
+    resto = [e async for e in eventos]
+    i = next(n for n, e in enumerate(resto) if e.startswith("event: reinicio"))
+    assert '"Un texto más largo que el primero"' in resto[i + 1]  # el texto nuevo, entero, después del reinicio
+    assert resto[-1].startswith("event: fin")
+    await redis.aclose()
+
+
+async def test_el_stream_documenta_todos_sus_eventos_en_openapi(publicador):
+    async with levantar_api(orquestador(publicador)) as api:
+        esquema = (await api.client.get("/openapi.json")).json()
+    descripcion = esquema["paths"]["/tasks/{job_id}/stream"]["get"]["responses"]["200"]["description"]
+    for evento in ("estado", "nodo", "token", "reinicio", "fin"):
+        assert f"`{evento}`" in descripcion

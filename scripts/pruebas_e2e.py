@@ -14,7 +14,7 @@ Escenarios (cada uno deja trazas en Phoenix y un JSON con pedidos y respuestas e
   03b seguimiento post-reinicio   tercer turno de la conversación de la 01/02 después del reinicio
   04 rechazo               tarea crítica rechazada por el revisor: no publica y lo explica
   05 fuera de dominio      el supervisor la detecta y la síntesis responde sin LLM
-  06 validación            422 (Pydantic), 404, 401 (clave de revisor) y 409, sin gastar LLM
+  06 validación            422 (Pydantic), 404 y 401 (clave de revisor), sin gastar LLM (el 409 está en la 01 y la 04)
 
 Corren en serie a propósito: con el free tier de Gemini (~5 pedidos/min y ~20/día por modelo)
 lanzarlas en paralelo solo haría cola en el limitador. Resumen en `docs/pruebas_e2e.md`.
