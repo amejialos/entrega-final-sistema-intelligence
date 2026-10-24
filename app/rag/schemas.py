@@ -14,13 +14,16 @@ Modo = Literal["hibrido", "vector", "bm25"]
 Via = Literal["vector", "bm25"]
 
 
+MAX_K = 10  # tope de fragmentos por búsqueda; lo comparten ConsultaRAG y RAG_TOP_K (Settings)
+
+
 class ConsultaRAG(BaseModel):
     """Una consulta al recuperador."""
 
     model_config = ConfigDict(extra="forbid")
 
     consulta: str = Field(min_length=3, max_length=500, examples=["¿Qué significa el error CAU-417?"])
-    k: int = Field(default=5, ge=1, le=10, description="Cantidad de fragmentos a devolver.")
+    k: int = Field(default=5, ge=1, le=MAX_K, description="Cantidad de fragmentos a devolver.")
     modo: Modo = Field(default="hibrido", description="hibrido (vector + BM25 con RRF), vector o bm25.")
 
     @field_validator("consulta")

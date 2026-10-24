@@ -177,3 +177,24 @@ def test_el_modelo_lee_los_chunks_completos_y_un_corte_queda_marcado():
     errores = next(c.page_content for c in chunks if "CAU-417" in c.page_content)
     assert "esquema registrado" in recortar(errores)
     assert recortar("x" * (MAX_CHARS_FRAGMENTO + 1)).endswith(MARCA_RECORTE)
+
+
+@pytest.mark.parametrize(
+    "expresion",
+    [
+        "1e300 ** 2",  # OverflowError de float
+        "((9 ** 99) ** 99) ** 99",  # cada exponente es chico pero el resultado tiene ~1 millón de dígitos
+        "10 ** 99 * 10 ** 99",  # producto gigante
+        "9" * 60,  # literal gigante
+    ],
+)
+def test_calcular_rechaza_resultados_desmesurados_sin_romper_el_job(expresion):
+    """Ninguna cuenta puede tirar una excepción no controlada (el job quedaría FAILED) ni colgar el proceso."""
+    with pytest.raises(ExpresionInvalida, match="demasiado grande"):
+        evaluar_expresion(expresion)
+    assert "demasiado grande" in json.loads(calcular.invoke({"expresion": expresion}))["error"]
+
+
+def test_calcular_acepta_cuentas_grandes_pero_razonables():
+    assert evaluar_expresion("2 ** 64") == 18446744073709551616
+    assert evaluar_expresion("2000000 * 500 * 3600") == 3_600_000_000_000

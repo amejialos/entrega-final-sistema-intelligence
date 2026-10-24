@@ -78,3 +78,14 @@ def test_reviewer_api_key_corta_se_rechaza(entorno):
         Settings(_env_file=None)
     entorno.setenv("REVIEWER_API_KEY", "x" * 16)
     assert Settings(_env_file=None).reviewer_api_key.get_secret_value() == "x" * 16
+
+
+def test_rag_top_k_y_consulta_rag_comparten_el_mismo_limite(entorno):
+    from app.rag.schemas import MAX_K, ConsultaRAG
+
+    _completo(entorno)
+    entorno.setenv("RAG_TOP_K", str(MAX_K))
+    assert ConsultaRAG(consulta="tamaño de lote", k=Settings(_env_file=None).rag_top_k).k == MAX_K
+    entorno.setenv("RAG_TOP_K", str(MAX_K + 1))
+    with pytest.raises(ValidationError, match="rag_top_k"):
+        Settings(_env_file=None)

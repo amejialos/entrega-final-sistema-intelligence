@@ -12,6 +12,8 @@ import warnings
 from collections.abc import Sequence
 from typing import Any
 
+import httpx
+import openai
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import BaseTool
@@ -31,11 +33,15 @@ SPECIALIST_RECURSION_LIMIT = 9
 
 
 def es_error_transitorio(exc: Exception) -> bool:
-    """429 por cuota POR MINUTO o 5xx (p. ej. 503 "high demand"): vale la pena reintentar.
+    """429 por cuota POR MINUTO, 5xx (p. ej. 503 "high demand"), timeouts y caídas de red: vale la pena reintentar.
 
     El 429 por cuota DIARIA (`...PerDay...`) no se libera en minutos: reintentarlo solo gasta
     tiempo, así que se deja pasar (el job queda FAILED con el motivo).
     """
+    # El SDK tiene max_retries=0 (los reintentos son de esta política): un timeout de LLM_TIMEOUT_S
+    # o un corte de conexión no puede matar el job. APITimeoutError es subclase de APIConnectionError.
+    if isinstance(exc, (openai.APIConnectionError, httpx.TransportError)):
+        return True
     status = getattr(exc, "status_code", None)
     if status == 429:
         return "PerDay" not in str(exc)

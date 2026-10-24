@@ -92,3 +92,14 @@ def test_reintenta_transitorios_pero_no_la_cuota_diaria():
     assert es_error_transitorio(_ErrorHTTP(429, "quotaId: GenerateRequestsPerMinutePerProjectPerModel"))
     assert not es_error_transitorio(_ErrorHTTP(429, "quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier"))
     assert not es_error_transitorio(_ErrorHTTP(400, "bad request"))
+
+
+def test_reintenta_timeouts_y_caidas_de_red():
+    import httpx
+    import openai
+
+    pedido = httpx.Request("POST", "https://llm.test/v1/chat/completions")
+    assert es_error_transitorio(openai.APITimeoutError(request=pedido))
+    assert es_error_transitorio(openai.APIConnectionError(request=pedido))
+    assert es_error_transitorio(httpx.ConnectError("sin red", request=pedido))
+    assert not es_error_transitorio(ValueError("un bug no se reintenta"))

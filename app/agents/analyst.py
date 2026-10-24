@@ -35,6 +35,9 @@ from app.graph.state import OrchestratorState
 NOMBRE = "analyst"
 MAX_LARGO_EXPRESION = 200
 MAX_EXPONENTE = 100  # 10**100 alcanza; 9**9**9 colgaría el proceso
+# Tope de magnitud de cualquier valor intermedio: sobra para lotes, eventos y segundos, y evita
+# que una cadena de operaciones "chicas" ((9**99)**99)**99 arme enteros de un millón de dígitos.
+MAX_MAGNITUD = 10**30
 MAX_CHARS_TURNO_PREVIO = 1500
 
 PROMPT = """Sos el Agente Analista de un equipo de análisis. Hacés cálculos sobre datos que
@@ -74,24 +77,39 @@ def evaluar_expresion(expresion: str) -> float | int:
     except SyntaxError as exc:
         raise ExpresionInvalida(f"sintaxis inválida: {exc.msg}") from exc
 
+    def _acotado(valor: float | int) -> float | int:
+        if abs(valor) > MAX_MAGNITUD:
+            raise ExpresionInvalida(f"resultado demasiado grande (máximo 1e{len(str(MAX_MAGNITUD)) - 1})")
+        return valor
+
     def _eval(nodo: ast.AST) -> float | int:
         if isinstance(nodo, ast.Expression):
             return _eval(nodo.body)
         if isinstance(nodo, ast.Constant) and type(nodo.value) in (int, float):
-            return nodo.value
+            return _acotado(nodo.value)
         if isinstance(nodo, ast.BinOp) and type(nodo.op) in _BINARIOS:
             izq, der = _eval(nodo.left), _eval(nodo.right)
-            if isinstance(nodo.op, ast.Pow) and abs(der) > MAX_EXPONENTE:
-                raise ExpresionInvalida(f"exponente demasiado grande (máximo {MAX_EXPONENTE})")
-            return _BINARIOS[type(nodo.op)](izq, der)
+            if isinstance(nodo.op, ast.Pow):
+                if abs(der) > MAX_EXPONENTE:
+                    raise ExpresionInvalida(f"exponente demasiado grande (máximo {MAX_EXPONENTE})")
+                # Antes de calcular: |base|**exp > MAX_MAGNITUD se detecta con logaritmos, sin armar el número.
+                if abs(izq) > 1 and der > 0 and der * math.log10(abs(izq)) > math.log10(MAX_MAGNITUD):
+                    raise ExpresionInvalida("resultado demasiado grande (potencia)")
+            return _acotado(_BINARIOS[type(nodo.op)](izq, der))
         if isinstance(nodo, ast.UnaryOp) and type(nodo.op) in _UNARIOS:
             return _UNARIOS[type(nodo.op)](_eval(nodo.operand))
         raise ExpresionInvalida(f"elemento no permitido: {type(nodo).__name__} (solo números y + - * / // % **)")
 
     try:
         return _eval(arbol)
+    except ExpresionInvalida:  # es un ValueError: que no la re-envuelva el except de abajo
+        raise
     except ZeroDivisionError as exc:
         raise ExpresionInvalida("división por cero") from exc
+    except OverflowError as exc:  # float que no entra (1e300 ** 2): un dato para el agente, no un crash
+        raise ExpresionInvalida("resultado demasiado grande (overflow)") from exc
+    except ValueError as exc:  # p. ej. potencia negativa con exponente fraccionario
+        raise ExpresionInvalida(f"operación inválida: {exc}") from exc
 
 
 @tool("calcular", args_schema=ArgsCalculo, response_format="content_and_artifact")

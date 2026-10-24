@@ -21,6 +21,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.rag.schemas import MAX_K
+
 Rol = Literal["supervisor", "research", "analyst", "synth"]
 
 
@@ -74,7 +76,7 @@ class Settings(BaseSettings):
     pinecone_namespace: str = Field(min_length=1, description="Namespace con los chunks del corpus.")
     pinecone_cloud: str = "aws"
     pinecone_region: str = "us-east-1"
-    rag_top_k: int = Field(default=5, ge=1, le=20)
+    rag_top_k: int = Field(default=5, ge=1, le=MAX_K, description="Fragmentos por búsqueda del investigador.")
     rag_peso_vector: float = Field(default=0.5, ge=0, le=1, description="Peso del vector en la fusión RRF.")
     rag_auto_ingesta: bool = Field(
         default=True, description="Al arrancar, crea el índice y sube el corpus si falta (máquina limpia)."
