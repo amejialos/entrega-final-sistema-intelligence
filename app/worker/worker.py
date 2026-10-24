@@ -220,6 +220,13 @@ class Worker:
             if job is None:
                 logger.warning("Mensaje para un job inexistente (%s): se descarta", job_id)
                 return
+            if not mensaje_vigente(mensaje, job):
+                # Reentrega de un mensaje ya procesado (el worker murió entre terminar y borrarlo de
+                # `procesando`): correrlo de nuevo repetiría el turno, gastaría LLM y duplicaría el historial.
+                logger.warning(
+                    "Mensaje %s para el job %s en %s: ya no corresponde, se descarta", mensaje.tipo, job_id, job.status
+                )
+                return
             await self.store.actualizar(job_id, Estado.RUNNING, aprobacion_pendiente=None)
             contador = MetricasLLM(self.precios)
             config = run_config(job.thread_id, job_id, fase=mensaje.tipo, callbacks=[contador])
@@ -345,3 +352,15 @@ def es_token_de_sintesis(trozo: Any, meta: dict[str, Any]) -> bool:
         and isinstance(trozo, AIMessage)
         and bool(trozo.text)
     )
+
+
+def mensaje_vigente(mensaje: MensajeEjecutar | MensajeReanudar, job: JobRecord) -> bool:
+    """Idempotencia: un mensaje solo se procesa si el job está en el estado que ese mensaje espera.
+
+    - ejecutar: PENDING (recién creado) o RUNNING (un worker murió a mitad de la corrida: se continúa).
+    - reanudar: PENDING con una aprobación registrada (la dejó `POST /approve`), o RUNNING por la misma razón.
+    Un job DONE, FAILED o esperando aprobación nunca se vuelve a correr por un mensaje viejo.
+    """
+    if job.status not in (Estado.PENDING, Estado.RUNNING):
+        return False
+    return not isinstance(mensaje, MensajeReanudar) or job.aprobacion is not None

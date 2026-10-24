@@ -25,6 +25,16 @@ from tests.conftest import CLAVE_ANA, PRECIOS_TEST, PREGUNTA, RESPUESTA, levanta
         ("Exportá la estimación de tiempos de procesamiento.", False, True),
         ("¿Qué dice la documentación sobre la publicación de eventos?", False, False),  # sustantivo, no pedido
         ("¿Cómo es el envío de eventos en lote?", False, False),
+        # Preguntas informativas con el verbo en indicativo: NO son pedidos (antes daban falso positivo).
+        ("¿Qué métricas exporta Caudal a Prometheus?", False, False),
+        ("¿Caudal envía los eventos fallidos a una cola de errores?", False, False),
+        ("¿Cómo notifica Caudal un error CAU-417?", False, False),
+        ("¿Cómo exportar métricas a Prometheus?", False, False),
+        # Pedidos de acción: voseo con tilde, con pronombre, tú con objeto, "quiero que", infinitivo como orden.
+        ("Publicalo en el canal del equipo.", False, True),
+        ("Publica el reporte del error CAU-417 para soporte.", False, True),
+        ("Quiero que envíes el resumen al equipo de datos.", False, True),
+        ("Mandá el informe a soporte.", False, True),
     ],
 )
 def test_criterio_de_tarea_critica(pregunta, publicar, critica):

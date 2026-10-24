@@ -39,9 +39,24 @@ ACCION_CRITICA = "publicar_reporte"
 MAX_BORRADOR = 3000  # lo que ve el revisor del borrador (el resto queda en el checkpoint)
 COMO_RESPONDER = 'POST /tasks/{job_id}/approve con el header X-Reviewer-Key y {"aprobado": true|false, "comentario": "..."}'
 
-# Verbos que piden una acción hacia afuera. Se compara sin tildes y en minúsculas:
-# "publicá" -> "publica". "publicación" NO matchea (no es un pedido de acción).
-_PEDIDO_DE_ACCION = re.compile(r"\b(publica|envia|notifica|exporta)(r|lo|la|los|las)?\b")
+# Pedidos de una acción hacia afuera (publicar, enviar, mandar, notificar, exportar). El indicativo
+# ("¿qué métricas exporta Caudal?") es una pregunta, no un pedido; por eso cada forma es inequívoca:
+_VERBOS = r"(?:public|envi|mand|notific|export|compart)"
+_PEDIDOS = [
+    # 1. voseo imperativo, con tilde: "publicá", "enviá", "mandá" (se busca ANTES de sacar las tildes)
+    re.compile(r"\b(?:publicá|enviá|mandá|notificá|exportá|compartí)\b"),
+    # 2. imperativo con pronombre: "publicalo", "envíaselo", "mandalos"
+    re.compile(rf"\b{_VERBOS}[ai](?:se)?(?:lo|la|los|las|le|les)\b"),
+    # 3. "quiero que publiques / necesito que envíes": subjuntivo, siempre es un pedido
+    re.compile(r"\b(?:publiques|envies|mandes|notifiques|exportes|compartas)\b"),
+    # 4. tú imperativo + lo que se manda: "publica el reporte", "envía un resumen"
+    re.compile(
+        rf"\b{_VERBOS}[ae] (?:el|la|los|las|un|una|este|esta|ese|esa) "
+        r"(?:reporte|informe|resumen|resultado|estimacion|calculo|respuesta)"
+    ),
+    # 5. infinitivo como orden, al principio: "Notificar al canal cuando..." (no "¿cómo exportar...?")
+    re.compile(rf"^\W*{_VERBOS}ar\b"),
+]
 
 # Firma del publicador inyectado: (job_id, reporte) -> destino donde quedó publicado.
 Publicador = Callable[[str, dict[str, Any]], Awaitable[str]]
@@ -57,7 +72,8 @@ def motivos_criticidad(pregunta: str, publicar: bool) -> list[str]:
     motivos = []
     if publicar:
         motivos.append(f"El cliente pidió '{ACCION_CRITICA}' (publicar=true): acción con efectos secundarios.")
-    pedido = _PEDIDO_DE_ACCION.search(_sin_tildes(pregunta))
+    texto = pregunta.lower()
+    pedido = _PEDIDOS[0].search(texto) or next((m for patron in _PEDIDOS[1:] if (m := patron.search(_sin_tildes(texto)))), None)
     if pedido:
         motivos.append(f"La pregunta pide una acción hacia afuera ('{pedido.group(0)}'): se ejecutaría '{ACCION_CRITICA}'.")
     return motivos

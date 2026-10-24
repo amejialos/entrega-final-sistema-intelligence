@@ -189,3 +189,24 @@ async def test_health_responde_503_con_contrato_si_redis_no_responde():
         api.app.state.recursos.redis.ping = caido
         r = await api.client.get("/health")
         assert r.status_code == 503 and r.json() == {"detail": "Redis no responde."}
+
+
+async def test_un_mensaje_reentregado_de_un_job_que_ya_termino_no_lo_vuelve_a_correr():
+    """El worker murió entre marcar DONE y borrar el mensaje: al reentregarse, se descarta (idempotencia)."""
+    async with levantar_api(grafo_simple()) as api:
+        job_id = await api.crear()
+        terminado = await api.esperar(job_id, "DONE")
+        await api.redis.lpush("final:cola", json.dumps({"tipo": "ejecutar", "job_id": job_id}))
+        await api.redis.lpush(
+            "final:cola",
+            json.dumps({"tipo": "reanudar", "job_id": job_id, "decision": {"aprobado": True, "revisor": "ana"}}),
+        )
+        for _ in range(50):  # que el worker consuma los dos mensajes
+            if await api.redis.llen("final:cola") == 0 and await api.redis.llen(api.worker.procesando) == 0:
+                break
+            await asyncio.sleep(0.02)
+        await asyncio.sleep(0.1)
+        despues = (await api.client.get(f"/tasks/{job_id}")).json()
+        assert despues["status"] == "DONE"
+        assert despues["eventos"] == terminado["eventos"]  # ni un RUNNING de más
+        assert despues["resultado"] == terminado["resultado"]
