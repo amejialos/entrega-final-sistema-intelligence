@@ -31,6 +31,14 @@ class EventoEstado(BaseModel):
     por: str | None = Field(default=None, description="Quién la provocó, si no fue el worker (p. ej. 'approve').")
 
 
+class EventoNodo(BaseModel):
+    """Un nodo del grafo que terminó (el progreso que transmite `GET /tasks/{id}/stream`)."""
+
+    nodo: str = Field(description="Nodo del grafo: supervisor, researcher, analyst, synthesizer...")
+    t: str = Field(description="Momento en que terminó (ISO 8601, UTC).")
+    detalle: str | None = Field(default=None, description="Resumen del paso (p. ej. a quién delegó el supervisor).")
+
+
 class DecisionHumana(BaseModel):
     """La señal externa que reanuda una tarea pausada (body de `POST /tasks/{id}/approve`)."""
 
@@ -105,6 +113,7 @@ class JobRecord(BaseModel):
     aprobacion: DecisionHumana | None = None
     metricas: Metricas | None = Field(default=None, description="Latencia, tokens y costo estimado de este job.")
     eventos: list[EventoEstado] = Field(default_factory=list, description="Historial de estados con su hora.")
+    pasos: list[EventoNodo] = Field(default_factory=list, description="Nodos del grafo que fueron terminando.")
 
 
 # --- Mensajes de la cola del worker (se validan al leerlos de Redis) ---

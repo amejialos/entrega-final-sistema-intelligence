@@ -200,7 +200,12 @@ class Worker:
 
             inicio = time.perf_counter()
             try:
-                await self.graph.ainvoke(entrada, config)
+                # `astream` en vez de `ainvoke`: mismo resultado, pero cada nodo que termina queda
+                # registrado en Redis y `GET /tasks/{id}/stream` lo transmite en vivo.
+                async for actualizacion in self.graph.astream(entrada, config, stream_mode="updates"):
+                    for nodo, cambios in actualizacion.items():
+                        if not nodo.startswith("__"):  # "__interrupt__" no es un nodo
+                            await self.store.registrar_paso(job_id, nodo, detalle_paso(nodo, cambios))
             finally:
                 metricas_corrida = contador.metricas(time.perf_counter() - inicio)
 
@@ -264,3 +269,21 @@ if __name__ == "__main__":
         asyncio.run(_main())
     except KeyboardInterrupt:
         pass
+
+
+def detalle_paso(nodo: str, cambios: Any) -> str | None:
+    """Resumen legible de lo que hizo un nodo, para el stream de progreso."""
+    if not isinstance(cambios, dict):
+        return None
+    if nodo == "supervisor" and cambios.get("next_agent"):
+        decisiones = cambios.get("decisiones") or [{}]
+        razon = str(decisiones[-1].get("razon", ""))[:160]
+        return f"-> {cambios['next_agent']}" + (f": {razon}" if razon else "")
+    contribuciones = cambios.get("contributions") or []
+    if contribuciones:
+        c = contribuciones[-1]
+        fuentes = len(c.get("fuentes") or [])
+        return f"{c.get('estado', '?')}" + (f", {fuentes} fuentes" if fuentes else "")
+    if cambios.get("motivos_criticidad"):
+        return "tarea crítica: pide aprobación humana"
+    return None

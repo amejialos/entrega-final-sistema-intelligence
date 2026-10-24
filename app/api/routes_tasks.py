@@ -1,12 +1,15 @@
-"""Tareas: crear un turno (202 + job_id), consultar su estado y aprobar las tareas críticas.
+"""Tareas: crear un turno (202 + job_id), consultar su estado (polling o stream SSE) y aprobar las críticas.
 
 Ningún endpoint espera al grafo: solo leen o escriben Redis (cliente async) y encolan. Por eso
 un POST tarda milisegundos aunque la corrida del grafo tarde minutos.
 """
 
+import asyncio
+from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
+from fastapi.responses import StreamingResponse
 
 from app.api.deps import RecursosDep, requiere_revisor
 from app.api.schemas import (
@@ -17,8 +20,8 @@ from app.api.schemas import (
     TareaAceptada,
     TareaIn,
 )
-from app.worker.jobs import ConversacionOcupada
-from app.worker.models import DecisionHumana, Estado, JobRecord, MensajeReanudar
+from app.worker.jobs import ConversacionOcupada, JobStore
+from app.worker.models import FINALES, DecisionHumana, Estado, JobRecord, MensajeReanudar
 
 router = APIRouter(prefix="/tasks")
 
@@ -68,6 +71,69 @@ async def estado_tarea(job_id: JobId, recursos: RecursosDep) -> JobRecord:
     if job is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No existe el job {job_id}.")
     return job
+
+
+INTERVALO_STREAM_S = 0.25  # cada cuánto se miran los eventos nuevos en Redis
+LATIDO_S = 15.0  # comentario SSE para que proxies y clientes no corten una conexión sin novedades
+CORTES_STREAM = FINALES | {Estado.WAITING_APPROVAL}
+
+
+def _sse(evento: str, datos: str) -> str:
+    return f"event: {evento}\ndata: {datos}\n\n"
+
+
+async def _eventos_sse(job_id: str, store: JobStore, request: Request) -> AsyncIterator[str]:
+    """Transmite estados y nodos nuevos (intercalados por hora) hasta DONE/FAILED o WAITING_APPROVAL."""
+    vistos_estados = vistos_pasos = 0
+    sin_novedades_s = 0.0
+    while True:
+        job = await store.get(job_id)
+        if job is None:  # venció el TTL o se borró mientras se transmitía
+            return
+        nuevos = [("estado", e.t, e.model_dump_json(exclude_none=True)) for e in job.eventos[vistos_estados:]]
+        nuevos += [("nodo", p.t, p.model_dump_json(exclude_none=True)) for p in job.pasos[vistos_pasos:]]
+        vistos_estados, vistos_pasos = len(job.eventos), len(job.pasos)
+        for evento, _, datos in sorted(nuevos, key=lambda n: n[1]):
+            yield _sse(evento, datos)
+        if job.status in CORTES_STREAM:
+            # El último evento trae el job completo (resultado o lo que hay que aprobar).
+            yield _sse("fin", job.model_dump_json(exclude={"eventos", "pasos"}))
+            return
+        sin_novedades_s = 0.0 if nuevos else sin_novedades_s + INTERVALO_STREAM_S
+        if sin_novedades_s >= LATIDO_S:
+            sin_novedades_s = 0.0
+            yield ": latido\n\n"
+        if await request.is_disconnected():
+            return
+        await asyncio.sleep(INTERVALO_STREAM_S)
+
+
+@router.get(
+    "/{job_id}/stream",
+    tags=["tareas"],
+    summary="Progreso en vivo de un job (Server-Sent Events)",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "content": {"text/event-stream": {}},
+            "description": "Eventos `estado` (EventoEstado), `nodo` (EventoNodo) y un `fin` final con el JobRecord.",
+        },
+        404: {"model": ErrorOut},
+    },
+)
+async def stream_tarea(job_id: JobId, recursos: RecursosDep, request: Request) -> StreamingResponse:
+    """Alternativa al polling: una conexión que recibe cada cambio de estado y cada nodo del grafo que termina
+    (supervisor, investigador, analista, síntesis...). Se cierra sola al terminar o al pausarse para aprobación.
+
+    Probalo con `curl -N localhost:8000/tasks/{job_id}/stream`.
+    """
+    if await recursos.store.get(job_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No existe el job {job_id}.")
+    return StreamingResponse(
+        _eventos_sse(job_id, recursos.store, request),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("", tags=["tareas"], summary="Últimos jobs", response_model=list[JobRecord])

@@ -4,6 +4,7 @@ Claves (con el prefijo `REDIS_PREFIJO`, por defecto `final`):
 
     final:job:{job_id}              hash con el estado del job (lo valida `JobRecord`)
     final:job:{job_id}:eventos      lista con cada transición de estado y su hora
+    final:job:{job_id}:pasos        lista con cada nodo del grafo que terminó (streaming del progreso)
     final:jobs                      sorted set por fecha de creación (GET /tasks)
     final:thread:{thread_id}:jobs   lista con los jobs (turnos) de una conversación
     final:thread:{thread_id}:activo el job que está usando la conversación ahora (candado)
@@ -26,7 +27,7 @@ from pydantic import BaseModel
 from redis.asyncio import Redis
 from redis.exceptions import WatchError
 
-from app.worker.models import FINALES, DecisionHumana, Estado, JobRecord
+from app.worker.models import FINALES, DecisionHumana, Estado, EventoNodo, JobRecord
 
 _CAMPOS_JSON = ("resultado", "aprobacion_pendiente", "aprobacion", "metricas")
 
@@ -62,6 +63,9 @@ class JobStore:
 
     def _eventos(self, job_id: str) -> str:
         return f"{self.clave(job_id)}:eventos"
+
+    def _pasos(self, job_id: str) -> str:
+        return f"{self.clave(job_id)}:pasos"
 
     def _jobs_hilo(self, thread_id: str) -> str:
         return f"{self.prefijo}:thread:{thread_id}:jobs"
@@ -105,6 +109,7 @@ class JobStore:
                 datos[campo] = json.loads(datos[campo])
         datos["publicar"] = datos.get("publicar") == "1"
         datos["eventos"] = [json.loads(e) for e in await self.redis.lrange(self._eventos(job_id), 0, -1)]
+        datos["pasos"] = [json.loads(p) for p in await self.redis.lrange(self._pasos(job_id), 0, -1)]
         return JobRecord.model_validate(datos)
 
     async def actualizar(self, job_id: str, status: Estado | None = None, **campos: Any) -> None:
@@ -133,6 +138,14 @@ class JobStore:
         if status == Estado.RUNNING:
             # started_at es la PRIMERA vez que corrió: no se pisa al reanudar.
             await self.redis.hsetnx(self.clave(job_id), "started_at", momento)
+
+    async def registrar_paso(self, job_id: str, nodo: str, detalle: str | None = None) -> None:
+        """Agrega un nodo terminado al progreso del job (lo lee el stream SSE)."""
+        paso = EventoNodo(nodo=nodo, t=ahora(), detalle=detalle)
+        async with self.redis.pipeline(transaction=True) as pipe:
+            pipe.rpush(self._pasos(job_id), paso.model_dump_json(exclude_none=True))
+            pipe.expire(self._pasos(job_id), self.ttl)
+            await pipe.execute()
 
     async def tomar_aprobacion(self, job_id: str, decision: DecisionHumana) -> bool:
         """WAITING_APPROVAL -> PENDING de forma atómica (WATCH/MULTI). False si no estaba esperando."""
