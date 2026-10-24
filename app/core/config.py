@@ -34,20 +34,6 @@ class PrecioModelo(BaseModel):
     salida_usd_por_millon: float = Field(ge=0)
 
 
-# Precios de referencia para estimar el costo por respuesta (US$ / 1M tokens). Son los de la
-# tabla de modelos de Arize Phoenix 20.21.1 (consultada por su API GraphQL, `generativeModels`),
-# así el costo que devuelve la API coincide con el del dashboard. Se pueden reemplazar con
-# PRECIOS_LLM (JSON). Ojo: con el free tier de Gemini el gasto real es 0; esto estima lo que
-# costaría pagando. Los embeddings no se cuentan (Phoenix tampoco los costea).
-PRECIOS_REFERENCIA: dict[str, PrecioModelo] = {
-    "gemini-flash-lite-latest": PrecioModelo(entrada_usd_por_millon=0.30, salida_usd_por_millon=2.50),
-    "gemini-3.5-flash-lite": PrecioModelo(entrada_usd_por_millon=0.30, salida_usd_por_millon=2.50),
-    "gemini-3.1-flash-lite": PrecioModelo(entrada_usd_por_millon=0.25, salida_usd_por_millon=1.50),
-    "gemini-flash-latest": PrecioModelo(entrada_usd_por_millon=0.75, salida_usd_por_millon=3.75),
-    "gpt-4o-mini": PrecioModelo(entrada_usd_por_millon=0.15, salida_usd_por_millon=0.60),
-}
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -70,7 +56,10 @@ class Settings(BaseSettings):
     supervisor_structured_method: Literal["json_schema", "function_calling", "json_mode"] = "json_schema"
     llm_rpm: float | None = Field(default=None, gt=0, description="Pedidos por minuto POR MODELO (free tier).")
     llm_timeout_s: float = Field(default=90, gt=0)
-    precios_llm: dict[str, PrecioModelo] = Field(default_factory=lambda: dict(PRECIOS_REFERENCIA))
+    # Precios de referencia para estimar el costo por respuesta (US$ / 1M tokens), en JSON. Los del
+    # .env.example son los de la tabla de modelos de Arize Phoenix, así el costo de la API coincide
+    # con el del dashboard. Un modelo sin precio no rompe nada: queda en `modelos_sin_precio`.
+    precios_llm: dict[str, PrecioModelo] = Field(default_factory=dict)
 
     # --- Embeddings y Pinecone (RAG) ---
     embedding_model: str = Field(min_length=1, description="Modelo de embeddings (el mismo de la ingesta).")

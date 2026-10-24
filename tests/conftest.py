@@ -20,7 +20,7 @@ from langgraph.types import RetryPolicy
 
 from app.agents.researcher import crear_herramienta_busqueda
 from app.api.deps import Recursos
-from app.core.config import PRECIOS_REFERENCIA, PrecioModelo
+from app.core.config import PrecioModelo
 from app.graph.builder import build_graph
 from app.graph.state import OrchestratorState
 from app.main import create_app
@@ -33,7 +33,7 @@ RESPUESTA = "El tamano_lote por defecto es 500 [caudal-instalacion › Configura
 CLAVE_ANA = "clave-de-ana-0123456789"  # clave de revisora de los tests (REVIEWER_KEYS)
 # Precios de prueba para los modelos fake: el costo de las métricas es determinista.
 PRECIOS_TEST: dict[str, PrecioModelo] = {
-    **PRECIOS_REFERENCIA,
+    "gemini-flash-lite-latest": PrecioModelo(entrada_usd_por_millon=0.30, salida_usd_por_millon=2.50),
     "fake-supervisor": PrecioModelo(entrada_usd_por_millon=1.0, salida_usd_por_millon=2.0),
     "fake-modelo": PrecioModelo(entrada_usd_por_millon=1.0, salida_usd_por_millon=2.0),
 }
