@@ -1,57 +1,57 @@
 {
   "escenario": "02_seguimiento_misma_conversacion",
   "descripcion": "Seguimiento en el mismo thread_id: usa el historial guardado en el checkpoint.",
-  "fecha": "2026-10-15T08:13:26",
+  "fecha": "2026-10-24T11:44:39",
   "pasos": [
     {
       "nota": "",
       "pedido": "POST /tasks",
       "body": {
         "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
-        "thread_id": "e2e-conversacion-final"
+        "thread_id": "e2e-conversacion-final-10241141"
       },
       "status": 202,
-      "ms": 8.4,
+      "ms": 9.3,
       "respuesta": {
-        "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
-        "thread_id": "e2e-conversacion-final",
+        "job_id": "d1437cceb8874e10ad126dc79f8280d3",
+        "thread_id": "e2e-conversacion-final-10241141",
         "status": "PENDING",
         "links": {
-          "estado": "/tasks/a953a40cd4324adeaaa65e13c5ed98ea",
-          "conversacion": "/conversations/e2e-conversacion-final",
+          "estado": "/tasks/d1437cceb8874e10ad126dc79f8280d3",
+          "conversacion": "/conversations/e2e-conversacion-final-10241141",
           "aprobar": null
         }
       }
     },
     {
       "nota": "polling hasta DONE",
-      "pedido": "GET /tasks/a953a40cd4324adeaaa65e13c5ed98ea",
+      "pedido": "GET /tasks/d1437cceb8874e10ad126dc79f8280d3",
       "status": 200,
       "respuesta": {
-        "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
-        "thread_id": "e2e-conversacion-final",
+        "job_id": "d1437cceb8874e10ad126dc79f8280d3",
+        "thread_id": "e2e-conversacion-final-10241141",
         "status": "DONE",
         "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
         "publicar": false,
-        "created_at": "2026-10-15T11:13:26.008+00:00",
-        "updated_at": "2026-10-15T11:14:00.735+00:00",
-        "started_at": "2026-10-15T11:13:26.013+00:00",
-        "finished_at": "2026-10-15T11:14:00.735+00:00",
+        "created_at": "2026-10-24T14:44:39.626+00:00",
+        "updated_at": "2026-10-24T14:45:24.928+00:00",
+        "started_at": "2026-10-24T14:44:39.630+00:00",
+        "finished_at": "2026-10-24T14:45:24.928+00:00",
         "resultado": {
-          "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+          "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento sería de **10 segundos**.\n\nEste resultado se basa en el cálculo del analista:\n*   **Cálculo:** 400 lotes / (5 lotes por segundo por worker * 8 workers) = 10 segundos.",
           "fuentes": [],
           "contribuciones": [
             {
               "agente": "analyst",
               "paso": 1,
               "estado": "ok",
-              "tarea": "Calcula el nuevo tiempo de procesamiento para 400 lotes usando 8 workers, donde cada worker procesa 5 lotes por segundo. La capacidad total será de 40 lotes por segundo (8 * 5). Divide los 400 lotes entre la capacidad total de 40 lotes por segundo para obtener el tiempo en segundos.",
-              "resultado": "El nuevo tiempo de procesamiento para 400 lotes con 8 workers (capacidad total de 40 lotes por segundo) es de **10 segundos**.\n\n*   **Operación:** 400 lotes / 40 lotes por segundo = 10 segundos.\n*   **Supuestos:** Se utiliza la cantidad de 400 lotes proporcionada en la tarea y la capacidad total de 40 lotes por segundo calculada a partir de los 8 workers (8 * 5 lotes/segundo).",
+              "tarea": "Calcula el nuevo tiempo de procesamiento usando 400 lotes (del turno anterior) y 8 workers, sabiendo que cada worker procesa 5 lotes por segundo.",
+              "resultado": "Para procesar 400 lotes (basado en 2.000.000 de eventos con un tamaño de lote de 5.000) utilizando 8 workers que procesan 5 lotes por segundo cada uno, el tiempo estimado es:\n\n*   **Tiempo de procesamiento:** 10 segundos.\n*   **Cálculo:** 400 lotes / (5 lotes por segundo por worker * 8 workers) = 10 segundos.",
               "fuentes": [
-                "calcular"
+                "estimar_tiempo_procesamiento"
               ],
               "herramientas": [
-                "calcular"
+                "estimar_tiempo_procesamiento"
               ]
             }
           ],
@@ -71,27 +71,27 @@
         "aprobacion_pendiente": null,
         "aprobacion": null,
         "metricas": {
-          "latencia_total_s": 34.727,
-          "latencia_ejecucion_s": 34.705,
+          "latencia_total_s": 45.302,
+          "latencia_ejecucion_s": 45.285,
           "espera_aprobacion_s": null,
           "corridas": 1,
           "llamadas_llm": 5,
-          "tokens_entrada": 5012,
-          "tokens_salida": 566,
-          "tokens_totales": 5578,
-          "costo_estimado_usd": 0.00252565,
+          "tokens_entrada": 7299,
+          "tokens_salida": 648,
+          "tokens_totales": 7947,
+          "costo_estimado_usd": 0.0031928,
           "por_modelo": {
             "gemini-flash-lite-latest": {
               "llamadas": 2,
-              "tokens_entrada": 2213,
-              "tokens_salida": 313,
-              "costo_estimado_usd": 0.0014464
+              "tokens_entrada": 2061,
+              "tokens_salida": 293,
+              "costo_estimado_usd": 0.0013508
             },
             "gemini-3.1-flash-lite": {
               "llamadas": 3,
-              "tokens_entrada": 2799,
-              "tokens_salida": 253,
-              "costo_estimado_usd": 0.00107925
+              "tokens_entrada": 5238,
+              "tokens_salida": 355,
+              "costo_estimado_usd": 0.001842
             }
           },
           "modelos_sin_precio": []
@@ -99,72 +99,103 @@
         "eventos": [
           {
             "status": "PENDING",
-            "t": "2026-10-15T11:13:26.008+00:00",
+            "t": "2026-10-24T14:44:39.626+00:00",
             "por": null
           },
           {
             "status": "RUNNING",
-            "t": "2026-10-15T11:13:26.013+00:00",
+            "t": "2026-10-24T14:44:39.630+00:00",
             "por": null
           },
           {
             "status": "DONE",
-            "t": "2026-10-15T11:14:00.735+00:00",
+            "t": "2026-10-24T14:45:24.928+00:00",
             "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:44:48.770+00:00",
+            "detalle": "-> analyst: La pregunta actual es un seguimiento que requiere calcular el tiempo de procesamiento usando 8 workers, manteniendo los datos previos (400 lotes, 5 lotes por se"
+          },
+          {
+            "nodo": "analyst",
+            "t": "2026-10-24T14:45:10.706+00:00",
+            "detalle": "ok, 1 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:45:15.598+00:00",
+            "detalle": "-> synthesizer: La pregunta de seguimiento sobre el uso de 8 workers ya fue respondida y calculada correctamente por el analista utilizando los datos previos y las herramientas"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:45:24.903+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:45:24.914+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "cerrar_turno",
+            "t": "2026-10-24T14:45:24.919+00:00",
+            "detalle": null
           }
         ]
       }
     },
     {
       "nota": "historial de la conversación",
-      "pedido": "GET /conversations/e2e-conversacion-final",
+      "pedido": "GET /conversations/e2e-conversacion-final-10241141",
       "body": null,
       "status": 200,
-      "ms": 509.2,
+      "ms": 40.3,
       "respuesta": {
-        "thread_id": "e2e-conversacion-final",
+        "thread_id": "e2e-conversacion-final-10241141",
         "turnos": [
           {
             "numero": 1,
-            "job_id": "1c1ba8726ecc4d70923b07cdd9255cbb",
+            "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
             "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
-            "respuesta": "Para la ingesta masiva en Caudal, la documentación recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote]. Cabe notar que el valor por defecto configurado en el sistema es de 500 eventos [caudal-instalacion › Configuración con CaudalConfig].\n\nBasado en la recomendación de 5.000 eventos por lote, los cálculos realizados por el analista son los siguientes:\n\n*   **Cantidad de lotes:** Se requieren **400 lotes** para procesar 2.000.000 de eventos (operación: 2.000.000 / 5.000).\n*   **Tiempo total de procesamiento:** Se estima un tiempo de **20 segundos** (o 0,33 minutos). Este cálculo considera 4 workers procesando 5 lotes por segundo cada uno, lo que resulta en una capacidad total de 20 lotes por segundo (operación: 400 lotes / 20 lotes por segundo).",
+            "respuesta": "Para la ingesta masiva en Caudal, se recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote].\n\nBasado en los cálculos del analista, los resultados para 2.000.000 de eventos son los siguientes:\n\n*   **Cantidad de lotes:** 400 lotes.\n    *   Cálculo: 2.000.000 eventos / 5.000 eventos por lote = 400 lotes.\n*   **Tiempo de procesamiento:** 20 segundos.\n    *   Cálculo: 400 lotes / (5 lotes por segundo por worker * 4 workers) = 400 / 20 = 20 segundos.",
             "fuentes": [
               "caudal-changelog › Caudal 2.5",
               "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
-              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
-              "caudal-instalacion › Configuración con CaudalConfig",
+              "caudal-errores › Códigos de error CAU",
               "caudal-rendimiento › Backpressure y tamaño de lote",
               "caudal-rendimiento › Paralelismo y workers"
             ],
             "reporte_publicado": null,
-            "fecha": "2026-10-15T11:13:09+00:00"
+            "fecha": "2026-10-24T14:44:39+00:00"
           },
           {
             "numero": 2,
-            "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
+            "job_id": "d1437cceb8874e10ad126dc79f8280d3",
             "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
-            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento para los 2.000.000 de eventos (organizados en 400 lotes) se reduciría a **10 segundos**.\n\nEste cálculo fue realizado por el analista de la siguiente manera:\n*   **Capacidad total:** 8 workers × 5 lotes por segundo = 40 lotes por segundo.\n*   **Tiempo total:** 400 lotes / 40 lotes por segundo = 10 segundos.",
+            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento sería de **10 segundos**.\n\nEste resultado se basa en el cálculo del analista:\n*   **Cálculo:** 400 lotes / (5 lotes por segundo por worker * 8 workers) = 10 segundos.",
             "fuentes": [],
             "reporte_publicado": null,
-            "fecha": "2026-10-15T11:14:00+00:00"
+            "fecha": "2026-10-24T14:45:24+00:00"
           }
         ],
         "jobs": [
-          "1c1ba8726ecc4d70923b07cdd9255cbb",
-          "a953a40cd4324adeaaa65e13c5ed98ea"
+          "0e35dc6fb25b47c2ae39aad9639015d7",
+          "d1437cceb8874e10ad126dc79f8280d3"
         ],
         "job_activo": null,
         "pausado_en": [],
         "mensajes": 12,
-        "checkpoints": 35
+        "checkpoints": 41
       }
     }
   ],
   "resumen": {
     "escenario": "02 seguimiento (mismo thread_id)",
-    "job_id": "a953a40cd4324adeaaa65e13c5ed98ea",
-    "thread_id": "e2e-conversacion-final",
+    "job_id": "d1437cceb8874e10ad126dc79f8280d3",
+    "thread_id": "e2e-conversacion-final-10241141",
     "status": "DONE",
     "estados": "PENDING → RUNNING → DONE",
     "ruta_supervisor": [
@@ -175,13 +206,13 @@
     "fuentes": 0,
     "fuera_de_dominio": false,
     "reporte_publicado": null,
-    "latencia_total_s": 34.727,
-    "latencia_ejecucion_s": 34.705,
+    "latencia_total_s": 45.302,
+    "latencia_ejecucion_s": 45.285,
     "espera_aprobacion_s": null,
     "llamadas_llm": 5,
-    "tokens_entrada": 5012,
-    "tokens_salida": 566,
-    "costo_estimado_usd": 0.00252565,
+    "tokens_entrada": 7299,
+    "tokens_salida": 648,
+    "costo_estimado_usd": 0.0031928,
     "error": null
   }
 }

@@ -1,43 +1,47 @@
 # Costo, tokens y latencia según Phoenix (proyecto `entrega-final`)
 
-- Leído de la API GraphQL de Phoenix el 2026-10-15T08:26:18. Trazas: 12.
-- Costo total: US$ 0.019914 · tokens: 45936
-- Latencia de las trazas: p50 22.4 s · p95 87.9 s
-- Capa RAG: 10 spans RETRIEVER, latencia media 1858.0 ms (máx. 2380.3 ms).
+- Leído de la API GraphQL de Phoenix el 2026-10-24T11:47:55. Trazas: 12.
+- Costo total: US$ 0.034344 · tokens: 80203
+- Latencia de las trazas: p50 41.8 s · p95 181.1 s
+- Capa RAG: 13 spans RETRIEVER, latencia media 2022.7 ms (máx. 2397.7 ms).
 
 ## Por traza
 
 | inicio (UTC) | traza | job | conversación | fase | estado | latencia (s) | LLM | tokens in/out | costo (US$) |
 |---|---|---|---|---|---|---|---|---|---|
-| 11:07:19 | recuperacion_hibrida | `-` | `-` | - | OK | 2.33 | 0 | 0/0 | 0.000000 |
-| 11:11:09 | recuperacion_hibrida | `-` | `-` | - | OK | 1.41 | 0 | 0/0 | 0.000000 |
-| 11:11:16 | orquestador job=1c1ba872 (ejecutar) | `1c1ba872` | `e2e-conversacion-final` | ejecutar | OK | 112.66 | 9 | 10691/1029 | 0.005213 |
-| 11:13:26 | orquestador job=a953a40c (ejecutar) | `a953a40c` | `e2e-conversacion-final` | ejecutar | OK | 34.7 | 5 | 5012/566 | 0.002526 |
-| 11:14:02 | orquestador job=48790389 (ejecutar) | `48790389` | `2608a82de5bc42c2b41f3c7881f1aa72` | ejecutar | OK | 51.71 | 7 | 12015/569 | 0.004836 |
-| 11:15:03 | orquestador job=48790389 (reanudar) | `48790389` | `2608a82de5bc42c2b41f3c7881f1aa72` | reanudar | OK | 0.01 | 0 | 0/0 | 0.000000 |
-| 11:15:06 | orquestador job=3049339b (ejecutar) | `3049339b` | `e2e-conversacion-final` | ejecutar | OK | 34.09 | 2 | 1840/213 | 0.000970 |
-| 11:15:42 | orquestador job=2798d055 (ejecutar) | `2798d055` | `eda658cffb134e7285b760bff6d1c337` | ejecutar | OK | 50.56 | 6 | 7163/472 | 0.003214 |
-| 11:16:34 | orquestador job=2798d055 (reanudar) | `2798d055` | `eda658cffb134e7285b760bff6d1c337` | reanudar | OK | 0.02 | 0 | 0/0 | 0.000000 |
-| 11:16:37 | orquestador job=ff691bff (ejecutar) | `ff691bff` | `b39a68157adb43e0bfa8225660d991ef` | ejecutar | OK | 10.74 | 1 | 703/102 | 0.000466 |
-| 11:24:24 | orquestador job=ae73baec (ejecutar) | `ae73baec` | `a8939856ede14dfabc8c2b31bda40c6b` | ejecutar | OK | 67.67 | 5 | 5018/543 | 0.002690 |
-| 11:25:42 | orquestador job=ae73baec (reanudar) | `ae73baec` | `a8939856ede14dfabc8c2b31bda40c6b` | reanudar | OK | 0.05 | 0 | 0/0 | 0.000000 |
+| 14:31:45 | orquestador job=09fbd43c (ejecutar) | `09fbd43c` | `e2e-conversacion-10241131` | ejecutar | ERROR | 130.2 | 6 | 1569/193 | 0.000953 |
+| 14:33:55 | orquestador job=3f242877 (ejecutar) | `3f242877` | `e2e-conversacion-10241131` | ejecutar | OK | 98.83 | 7 | 10243/627 | 0.004223 |
+| 14:35:35 | orquestador job=4b6e1c6c (ejecutar) | `4b6e1c6c` | `2fe39ffe4bea4502b2f6a29f5c2b07c8` | ejecutar | OK | 38.27 | 5 | 8838/1264 | 0.004745 |
+| 14:36:19 | orquestador job=4b6e1c6c (reanudar) | `4b6e1c6c` | `2fe39ffe4bea4502b2f6a29f5c2b07c8` | reanudar | OK | 0.02 | 0 | 0/0 | 0.000000 |
+| 14:36:22 | orquestador job=33de2bfb (ejecutar) | `33de2bfb` | `e2e-conversacion-10241131` | ejecutar | OK | 160.75 | 10 | 11159/988 | 0.005183 |
+| 14:39:05 | orquestador job=9ad45dca (ejecutar) | `9ad45dca` | `73c720accc00417b90763064c498b7fc` | ejecutar | OK | 60.93 | 6 | 13806/1325 | 0.006360 |
+| 14:40:09 | orquestador job=9ad45dca (reanudar) | `9ad45dca` | `73c720accc00417b90763064c498b7fc` | reanudar | OK | 0.03 | 0 | 0/0 | 0.000000 |
+| 14:40:12 | orquestador job=8ebaf5e6 (ejecutar) | `8ebaf5e6` | `4c905971bde34414b805800244ac34e8` | ejecutar | OK | 6.44 | 1 | 703/115 | 0.000498 |
+| 14:40:21 | recuperacion_hibrida | `-` | `-` | - | OK | 2.15 | 0 | 0/0 | 0.000000 |
+| 14:41:13 | orquestador job=0e35dc6f (ejecutar) | `0e35dc6f` | `e2e-conversacion-final-10241141` | ejecutar | OK | 206.06 | 12 | 15282/1879 | 0.007542 |
+| 14:44:39 | orquestador job=d1437cce (ejecutar) | `d1437cce` | `e2e-conversacion-final-10241141` | ejecutar | OK | 45.28 | 5 | 7299/648 | 0.003193 |
+| 14:45:52 | orquestador job=36d8def1 (ejecutar) | `36d8def1` | `e2e-conversacion-final-10241141` | ejecutar | OK | 37.56 | 2 | 3944/321 | 0.001647 |
 
 ## Por nodo del grafo
 
 | nodo | llamadas LLM | tokens in/out | costo (US$) |
 |---|---|---|---|
-| researcher | 12 | 23079/538 | 0.008269 |
-| supervisor | 13 | 11835/1779 | 0.007998 |
-| synthesizer | 6 | 3503/842 | 0.002139 |
-| analyst | 4 | 4025/335 | 0.001509 |
+| synthesizer | 7 | 28866/3765 | 0.012864 |
+| supervisor | 19 | 15254/2400 | 0.010576 |
+| researcher | 23 | 24120/725 | 0.009048 |
+| analyst | 5 | 4603/470 | 0.001856 |
 
 ## Control cruzado: métricas de la API vs. Phoenix (mismo job)
 
-| escenario | job | costo API (US$) | costo Phoenix (US$) | tokens API | tokens Phoenix | LLM API | LLM Phoenix |
+Las llamadas que fallaron (p. ej. un 503 de alta demanda que la `RetryPolicy` reintentó) quedan en
+Phoenix como spans LLM en ERROR con 0 tokens: no cambian el costo ni los tokens. La API las cuenta
+en `metricas.llamadas_fallidas`.
+
+| escenario | job | costo API (US$) | costo Phoenix (US$) | tokens API | tokens Phoenix | LLM API (ok) | LLM Phoenix (ok + en ERROR) |
 |---|---|---|---|---|---|---|---|
-| 01 RAG + cálculo | `1c1ba872` | 0.00521255 | 0.005213 | 10691/1029 | 10691/1029 | 9 | 9 |
-| 02 seguimiento (mismo thread_id) | `a953a40c` | 0.00252565 | 0.002526 | 5012/566 | 5012/566 | 5 | 5 |
-| 03 HITL aprobada + reinicio | `ae73baec` | 0.0026897 | 0.002690 | 5018/543 | 5018/543 | 5 | 5 |
-| 03b seguimiento post-reinicio | `3049339b` | 0.00097025 | 0.000970 | 1840/213 | 1840/213 | 2 | 2 |
-| 04 HITL rechazada | `2798d055` | 0.00321425 | 0.003214 | 7163/472 | 7163/472 | 6 | 6 |
-| 05 fuera de dominio | `ff691bff` | 0.0004659 | 0.000466 | 703/102 | 703/102 | 1 | 1 |
+| 01 RAG + cálculo | `0e35dc6f` | 0.00754165 | 0.007542 | 15282/1879 | 15282/1879 | 10 | 10 + 2 |
+| 02 seguimiento (mismo thread_id) | `d1437cce` | 0.0031928 | 0.003193 | 7299/648 | 7299/648 | 5 | 5 + 0 |
+| 03 HITL aprobada + reinicio | `4b6e1c6c` | 0.0047451 | 0.004745 | 8838/1264 | 8838/1264 | 5 | 5 + 0 |
+| 03b seguimiento post-reinicio | `36d8def1` | 0.00164695 | 0.001647 | 3944/321 | 3944/321 | 2 | 2 + 0 |
+| 04 HITL rechazada | `9ad45dca` | 0.0063605 | 0.006360 | 13806/1325 | 13806/1325 | 6 | 6 + 0 |
+| 05 fuera de dominio | `8ebaf5e6` | 0.0004984 | 0.000498 | 703/115 | 703/115 | 1 | 1 + 0 |

@@ -1,7 +1,7 @@
 {
   "escenario": "04_hitl_rechazada",
   "descripcion": "Tarea crítica (publicar=true) rechazada por el revisor: no se publica y la respuesta lo explica.",
-  "fecha": "2026-10-15T08:15:42",
+  "fecha": "2026-10-24T11:39:05",
   "pasos": [
     {
       "nota": "",
@@ -11,31 +11,31 @@
         "publicar": true
       },
       "status": 202,
-      "ms": 6.7,
+      "ms": 4.3,
       "respuesta": {
-        "job_id": "2798d055f81e4dcd84d930276c0aa8b1",
-        "thread_id": "eda658cffb134e7285b760bff6d1c337",
+        "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+        "thread_id": "73c720accc00417b90763064c498b7fc",
         "status": "PENDING",
         "links": {
-          "estado": "/tasks/2798d055f81e4dcd84d930276c0aa8b1",
-          "conversacion": "/conversations/eda658cffb134e7285b760bff6d1c337",
+          "estado": "/tasks/9ad45dca5bd1450092660b1ca195c99b",
+          "conversacion": "/conversations/73c720accc00417b90763064c498b7fc",
           "aprobar": null
         }
       }
     },
     {
       "nota": "polling hasta WAITING_APPROVAL",
-      "pedido": "GET /tasks/2798d055f81e4dcd84d930276c0aa8b1",
+      "pedido": "GET /tasks/9ad45dca5bd1450092660b1ca195c99b",
       "status": 200,
       "respuesta": {
-        "job_id": "2798d055f81e4dcd84d930276c0aa8b1",
-        "thread_id": "eda658cffb134e7285b760bff6d1c337",
+        "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+        "thread_id": "73c720accc00417b90763064c498b7fc",
         "status": "WAITING_APPROVAL",
         "pregunta": "¿Qué conectores de origen soporta Caudal según su documentación?",
         "publicar": true,
-        "created_at": "2026-10-15T11:15:42.767+00:00",
-        "updated_at": "2026-10-15T11:16:33.339+00:00",
-        "started_at": "2026-10-15T11:15:42.770+00:00",
+        "created_at": "2026-10-24T14:39:05.784+00:00",
+        "updated_at": "2026-10-24T14:40:06.722+00:00",
+        "started_at": "2026-10-24T14:39:05.786+00:00",
         "finished_at": null,
         "resultado": null,
         "error": null,
@@ -44,38 +44,38 @@
           "motivos": [
             "El cliente pidió 'publicar_reporte' (publicar=true): acción con efectos secundarios."
           ],
-          "borrador": "Según la documentación oficial de Caudal, los conectores de origen soportados son:\n\n* **`KafkaFuente`**: permite consumir mensajes desde Apache Kafka [`caudal-conectores › KafkaFuente: leer desde Apache Kafka`].\n* **`ConectorPostgres`**: funciona como fuente mediante el uso de consultas incrementales o modo CDC [`caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos`].",
-          "como_responder": "POST /tasks/{job_id}/approve con {\"aprobado\": true|false, \"comentario\": \"...\", \"revisor\": \"...\"}"
+          "borrador": "Según la documentación oficial de Caudal, los conectores de origen (*source connectors*) soportados son los siguientes:\n\n* **`ArchivoFuente`**: Permite la lectura de eventos o líneas desde archivos locales [caudal-conectores › S3Sumidero y otros destinos, caudal-instalacion › Primer pipeline de ejemplo].\n* **`KafkaFuente`**: Consume mensajes desde tópicos de Apache Kafka (requiere el extra `caudal[kafka]`) [caudal-conectores › KafkaFuente: leer desde Apache Kafka].\n* **`ConectorPostgres`**: Opera como fuente mediante modos de consulta incremental o captura de cambios (CDC) en PostgreSQL (requiere el extra `caudal[postgres]`) [caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos].",
+          "como_responder": "POST /tasks/{job_id}/approve con el header X-Reviewer-Key y {\"aprobado\": true|false, \"comentario\": \"...\"}"
         },
         "aprobacion": null,
         "metricas": {
           "latencia_total_s": null,
-          "latencia_ejecucion_s": 50.567,
+          "latencia_ejecucion_s": 60.93,
           "espera_aprobacion_s": null,
           "corridas": 1,
           "llamadas_llm": 6,
-          "tokens_entrada": 7163,
-          "tokens_salida": 472,
-          "tokens_totales": 7635,
-          "costo_estimado_usd": 0.00321425,
+          "tokens_entrada": 13806,
+          "tokens_salida": 1325,
+          "tokens_totales": 15131,
+          "costo_estimado_usd": 0.0063605,
           "por_modelo": {
             "gemini-flash-lite-latest": {
               "llamadas": 2,
-              "tokens_entrada": 1600,
-              "tokens_salida": 244,
-              "costo_estimado_usd": 0.00109
+              "tokens_entrada": 1711,
+              "tokens_salida": 256,
+              "costo_estimado_usd": 0.0011533
             },
             "gemini-3.5-flash-lite": {
               "llamadas": 3,
-              "tokens_entrada": 5130,
-              "tokens_salida": 135,
-              "costo_estimado_usd": 0.0018765
+              "tokens_entrada": 7199,
+              "tokens_salida": 220,
+              "costo_estimado_usd": 0.0027097
             },
             "gemini-3.1-flash-lite": {
               "llamadas": 1,
-              "tokens_entrada": 433,
-              "tokens_salida": 93,
-              "costo_estimado_usd": 0.00024775
+              "tokens_entrada": 4896,
+              "tokens_salida": 849,
+              "costo_estimado_usd": 0.0024975
             }
           },
           "modelos_sin_precio": []
@@ -83,81 +83,107 @@
         "eventos": [
           {
             "status": "PENDING",
-            "t": "2026-10-15T11:15:42.767+00:00",
+            "t": "2026-10-24T14:39:05.784+00:00",
             "por": null
           },
           {
             "status": "RUNNING",
-            "t": "2026-10-15T11:15:42.770+00:00",
+            "t": "2026-10-24T14:39:05.786+00:00",
             "por": null
           },
           {
             "status": "WAITING_APPROVAL",
-            "t": "2026-10-15T11:16:33.339+00:00",
+            "t": "2026-10-24T14:40:06.722+00:00",
             "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:39:15.884+00:00",
+            "detalle": "-> researcher: La pregunta requiere buscar información documental sobre los conectores de origen que soporta Caudal, por lo que debe intervenir primero el investigador."
+          },
+          {
+            "nodo": "researcher",
+            "t": "2026-10-24T14:39:57.677+00:00",
+            "detalle": "ok, 7 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:40:02.550+00:00",
+            "detalle": "-> synthesizer: El researcher ya busco y encontro todos los conectores de origen soportados por Caudal con sus fuentes citadas correctamente. La pregunta esta completamente res"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:40:06.699+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:40:06.707+00:00",
+            "detalle": "tarea crítica: pide aprobación humana"
           }
         ]
       }
     },
     {
       "nota": "",
-      "pedido": "POST /tasks/2798d055f81e4dcd84d930276c0aa8b1/approve",
+      "pedido": "POST /tasks/9ad45dca5bd1450092660b1ca195c99b/approve",
       "body": {
         "aprobado": false,
-        "comentario": "Falta la versión mínima de cada conector.",
-        "revisor": "ana"
+        "comentario": "Falta la versión mínima de cada conector."
       },
       "status": 202,
-      "ms": 7.0,
+      "ms": 13.3,
       "respuesta": {
-        "job_id": "2798d055f81e4dcd84d930276c0aa8b1",
-        "thread_id": "eda658cffb134e7285b760bff6d1c337",
+        "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+        "thread_id": "73c720accc00417b90763064c498b7fc",
         "status": "PENDING",
         "aprobado": false,
         "links": {
-          "estado": "/tasks/2798d055f81e4dcd84d930276c0aa8b1",
-          "conversacion": "/conversations/eda658cffb134e7285b760bff6d1c337",
+          "estado": "/tasks/9ad45dca5bd1450092660b1ca195c99b",
+          "conversacion": "/conversations/73c720accc00417b90763064c498b7fc",
           "aprobar": null
         }
       }
     },
     {
       "nota": "409: ya no espera aprobación",
-      "pedido": "POST /tasks/2798d055f81e4dcd84d930276c0aa8b1/approve",
+      "pedido": "POST /tasks/9ad45dca5bd1450092660b1ca195c99b/approve",
       "body": {
         "aprobado": true
       },
       "status": 409,
-      "ms": 9.3,
+      "ms": 18.0,
       "respuesta": {
-        "detail": "El job 2798d055f81e4dcd84d930276c0aa8b1 no está esperando aprobación (estado: RUNNING)."
+        "detail": "El job 9ad45dca5bd1450092660b1ca195c99b no está esperando aprobación (estado: RUNNING)."
       }
     },
     {
       "nota": "polling hasta DONE",
-      "pedido": "GET /tasks/2798d055f81e4dcd84d930276c0aa8b1",
+      "pedido": "GET /tasks/9ad45dca5bd1450092660b1ca195c99b",
       "status": 200,
       "respuesta": {
-        "job_id": "2798d055f81e4dcd84d930276c0aa8b1",
-        "thread_id": "eda658cffb134e7285b760bff6d1c337",
+        "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+        "thread_id": "73c720accc00417b90763064c498b7fc",
         "status": "DONE",
         "pregunta": "¿Qué conectores de origen soporta Caudal según su documentación?",
         "publicar": true,
-        "created_at": "2026-10-15T11:15:42.767+00:00",
-        "updated_at": "2026-10-15T11:16:34.137+00:00",
-        "started_at": "2026-10-15T11:15:42.770+00:00",
-        "finished_at": "2026-10-15T11:16:34.137+00:00",
+        "created_at": "2026-10-24T14:39:05.784+00:00",
+        "updated_at": "2026-10-24T14:40:09.114+00:00",
+        "started_at": "2026-10-24T14:39:05.786+00:00",
+        "finished_at": "2026-10-24T14:40:09.114+00:00",
         "resultado": {
-          "respuesta": "La acción 'publicar_reporte' fue RECHAZADA por revisión humana (comentario: Falta la versión mínima de cada conector.). El reporte NO se publicó; la respuesta de abajo queda solo como borrador.\n\nSegún la documentación oficial de Caudal, los conectores de origen soportados son:\n\n* **`KafkaFuente`**: permite consumir mensajes desde Apache Kafka [`caudal-conectores › KafkaFuente: leer desde Apache Kafka`].\n* **`ConectorPostgres`**: funciona como fuente mediante el uso de consultas incrementales o modo CDC [`caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos`].",
+          "respuesta": "La acción 'publicar_reporte' fue RECHAZADA por revisión humana (comentario: Falta la versión mínima de cada conector.). El reporte NO se publicó; la respuesta de abajo queda solo como borrador.\n\nSegún la documentación oficial de Caudal, los conectores de origen (*source connectors*) soportados son los siguientes:\n\n* **`ArchivoFuente`**: Permite la lectura de eventos o líneas desde archivos locales [caudal-conectores › S3Sumidero y otros destinos, caudal-instalacion › Primer pipeline de ejemplo].\n* **`KafkaFuente`**: Consume mensajes desde tópicos de Apache Kafka (requiere el extra `caudal[kafka]`) [caudal-conectores › KafkaFuente: leer desde Apache Kafka].\n* **`ConectorPostgres`**: Opera como fuente mediante modos de consulta incremental o captura de cambios (CDC) en PostgreSQL (requiere el extra `caudal[postgres]`) [caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos].",
           "fuentes": [
             {
               "doc_id": "caudal-conectores",
-              "seccion": "S3Sumidero y otros destinos",
-              "chunk_id": "caudal-conectores-p3-c0",
+              "seccion": "KafkaFuente: leer desde Apache Kafka",
+              "chunk_id": "caudal-conectores-p1-c0",
               "titulo": "Conectores de fuentes y sumideros",
-              "score": 0.016393,
-              "score_vector": 0.697381,
-              "score_bm25": 4.511226,
+              "score": 0.016261,
+              "score_vector": 0.7455,
+              "score_bm25": 1.94771,
               "recuperado_por": [
                 "vector",
                 "bm25"
@@ -168,9 +194,22 @@
               "seccion": "Requisitos e instalación",
               "chunk_id": "caudal-instalacion-p1-c0",
               "titulo": "Instalación y configuración de Caudal",
-              "score": 0.016133,
-              "score_vector": 0.665507,
+              "score": 0.016009,
+              "score_vector": 0.615434,
               "score_bm25": 4.250282,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-conectores",
+              "seccion": "S3Sumidero y otros destinos",
+              "chunk_id": "caudal-conectores-p3-c0",
+              "titulo": "Conectores de fuentes y sumideros",
+              "score": 0.015889,
+              "score_vector": 0.657229,
+              "score_bm25": 1.803041,
               "recuperado_por": [
                 "vector",
                 "bm25"
@@ -181,8 +220,8 @@
               "seccion": "Caudal 2.0",
               "chunk_id": "caudal-changelog-p3-c0",
               "titulo": "Historial de versiones de Caudal",
-              "score": 0.016001,
-              "score_vector": 0.666506,
+              "score": 0.015873,
+              "score_vector": 0.641432,
               "score_bm25": 1.99791,
               "recuperado_por": [
                 "vector",
@@ -195,21 +234,34 @@
               "chunk_id": "caudal-conectores-p2-c0",
               "titulo": "Conectores de fuentes y sumideros",
               "score": 0.015757,
-              "score_vector": 0.667854,
-              "score_bm25": 2.916858,
+              "score_vector": 0.712319,
+              "score_bm25": 1.883715,
               "recuperado_por": [
                 "vector",
                 "bm25"
               ]
             },
             {
-              "doc_id": "caudal-conectores",
-              "seccion": "KafkaFuente: leer desde Apache Kafka",
-              "chunk_id": "caudal-conectores-p1-c0",
-              "titulo": "Conectores de fuentes y sumideros",
-              "score": 0.015512,
-              "score_vector": 0.621798,
-              "score_bm25": 3.405025,
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Backpressure y tamaño de lote",
+              "chunk_id": "caudal-rendimiento-p2-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.015505,
+              "score_vector": 0.674989,
+              "score_bm25": 1.897567,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-instalacion",
+              "seccion": "Primer pipeline de ejemplo",
+              "chunk_id": "caudal-instalacion-p3-c0",
+              "titulo": "Instalación y configuración de Caudal",
+              "score": 0.015399,
+              "score_vector": 0.667368,
+              "score_bm25": 1.945364,
               "recuperado_por": [
                 "vector",
                 "bm25"
@@ -221,14 +273,16 @@
               "agente": "researcher",
               "paso": 1,
               "estado": "ok",
-              "tarea": "Busca en la documentacion oficial de Caudal los conectores de origen soportados y devuelve la informacion con su fuente.",
-              "resultado": "Según la documentación oficial, los conectores de origen soportados son:\n\n* **`KafkaFuente`** (consume mensajes de Apache Kafka): [`caudal-conectores › KafkaFuente: leer desde Apache Kafka`]\n* **`ConectorPostgres`** (funciona como fuente mediante consultas incrementales o modo CDC): [`caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos`]",
+              "tarea": "Busca en la documentación oficial de Caudal los conectores de origen (source connectors) que soporta la librería e incluye las fuentes citadas.",
+              "resultado": "Los conectores de origen (source connectors) que soporta la librería Caudal son:\n\n* **`ArchivoFuente`**: Lee eventos o líneas desde archivos locales [caudal-conectores › S3Sumidero y otros destinos, caudal-instalacion › Primer pipeline de ejemplo].\n* **`KafkaFuente`**: Consume mensajes de uno o más tópicos de Apache Kafka (requiere el extra `caudal[kafka]`) [caudal-conectores › KafkaFuente: leer desde Apache Kafka].\n* **`ConectorPostgres`**: Funciona como fuente (en modo `consulta` incremental o en modo `cdc` de captura de cambios) utilizando PostgreSQL (requiere el extra `caudal[postgres]`) [caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos].",
               "fuentes": [
-                "caudal-conectores › S3Sumidero y otros destinos",
+                "caudal-conectores › KafkaFuente: leer desde Apache Kafka",
                 "caudal-instalacion › Requisitos e instalación",
+                "caudal-conectores › S3Sumidero y otros destinos",
                 "caudal-changelog › Caudal 2.0",
                 "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
-                "caudal-conectores › KafkaFuente: leer desde Apache Kafka"
+                "caudal-rendimiento › Backpressure y tamaño de lote",
+                "caudal-instalacion › Primer pipeline de ejemplo"
               ],
               "herramientas": [
                 "buscar_documentacion",
@@ -251,7 +305,7 @@
             "aprobado": false,
             "comentario": "Falta la versión mínima de cada conector.",
             "revisor": "ana",
-            "fecha": "2026-10-15T11:16:34+00:00"
+            "fecha": "2026-10-24T14:40:09+00:00"
           },
           "reporte_publicado": null
         },
@@ -263,33 +317,33 @@
           "revisor": "ana"
         },
         "metricas": {
-          "latencia_total_s": 51.37,
-          "latencia_ejecucion_s": 50.587,
-          "espera_aprobacion_s": 0.771,
+          "latencia_total_s": 63.33,
+          "latencia_ejecucion_s": 60.961,
+          "espera_aprobacion_s": 2.349,
           "corridas": 2,
           "llamadas_llm": 6,
-          "tokens_entrada": 7163,
-          "tokens_salida": 472,
-          "tokens_totales": 7635,
-          "costo_estimado_usd": 0.00321425,
+          "tokens_entrada": 13806,
+          "tokens_salida": 1325,
+          "tokens_totales": 15131,
+          "costo_estimado_usd": 0.0063605,
           "por_modelo": {
             "gemini-flash-lite-latest": {
               "llamadas": 2,
-              "tokens_entrada": 1600,
-              "tokens_salida": 244,
-              "costo_estimado_usd": 0.00109
+              "tokens_entrada": 1711,
+              "tokens_salida": 256,
+              "costo_estimado_usd": 0.0011533
             },
             "gemini-3.5-flash-lite": {
               "llamadas": 3,
-              "tokens_entrada": 5130,
-              "tokens_salida": 135,
-              "costo_estimado_usd": 0.0018765
+              "tokens_entrada": 7199,
+              "tokens_salida": 220,
+              "costo_estimado_usd": 0.0027097
             },
             "gemini-3.1-flash-lite": {
               "llamadas": 1,
-              "tokens_entrada": 433,
-              "tokens_salida": 93,
-              "costo_estimado_usd": 0.00024775
+              "tokens_entrada": 4896,
+              "tokens_salida": 849,
+              "costo_estimado_usd": 0.0024975
             }
           },
           "modelos_sin_precio": []
@@ -297,33 +351,70 @@
         "eventos": [
           {
             "status": "PENDING",
-            "t": "2026-10-15T11:15:42.767+00:00",
+            "t": "2026-10-24T14:39:05.784+00:00",
             "por": null
           },
           {
             "status": "RUNNING",
-            "t": "2026-10-15T11:15:42.770+00:00",
+            "t": "2026-10-24T14:39:05.786+00:00",
             "por": null
           },
           {
             "status": "WAITING_APPROVAL",
-            "t": "2026-10-15T11:16:33.339+00:00",
+            "t": "2026-10-24T14:40:06.722+00:00",
             "por": null
           },
           {
             "status": "PENDING",
-            "t": "2026-10-15T11:16:34.110+00:00",
+            "t": "2026-10-24T14:40:09.071+00:00",
             "por": "approve"
           },
           {
             "status": "RUNNING",
-            "t": "2026-10-15T11:16:34.113+00:00",
+            "t": "2026-10-24T14:40:09.077+00:00",
             "por": null
           },
           {
             "status": "DONE",
-            "t": "2026-10-15T11:16:34.137+00:00",
+            "t": "2026-10-24T14:40:09.114+00:00",
             "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:39:15.884+00:00",
+            "detalle": "-> researcher: La pregunta requiere buscar información documental sobre los conectores de origen que soporta Caudal, por lo que debe intervenir primero el investigador."
+          },
+          {
+            "nodo": "researcher",
+            "t": "2026-10-24T14:39:57.677+00:00",
+            "detalle": "ok, 7 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:40:02.550+00:00",
+            "detalle": "-> synthesizer: El researcher ya busco y encontro todos los conectores de origen soportados por Caudal con sus fuentes citadas correctamente. La pregunta esta completamente res"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:40:06.699+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:40:06.707+00:00",
+            "detalle": "tarea crítica: pide aprobación humana"
+          },
+          {
+            "nodo": "aprobacion_humana",
+            "t": "2026-10-24T14:40:09.096+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "cerrar_turno",
+            "t": "2026-10-24T14:40:09.104+00:00",
+            "detalle": null
           }
         ]
       }
@@ -331,8 +422,8 @@
   ],
   "resumen": {
     "escenario": "04 HITL rechazada",
-    "job_id": "2798d055f81e4dcd84d930276c0aa8b1",
-    "thread_id": "eda658cffb134e7285b760bff6d1c337",
+    "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+    "thread_id": "73c720accc00417b90763064c498b7fc",
     "status": "DONE",
     "estados": "PENDING → RUNNING → WAITING_APPROVAL → PENDING → RUNNING → DONE",
     "ruta_supervisor": [
@@ -340,16 +431,16 @@
       "FINISH"
     ],
     "turno": 1,
-    "fuentes": 5,
+    "fuentes": 7,
     "fuera_de_dominio": false,
     "reporte_publicado": null,
-    "latencia_total_s": 51.37,
-    "latencia_ejecucion_s": 50.587,
-    "espera_aprobacion_s": 0.771,
+    "latencia_total_s": 63.33,
+    "latencia_ejecucion_s": 60.961,
+    "espera_aprobacion_s": 2.349,
     "llamadas_llm": 6,
-    "tokens_entrada": 7163,
-    "tokens_salida": 472,
-    "costo_estimado_usd": 0.00321425,
+    "tokens_entrada": 13806,
+    "tokens_salida": 1325,
+    "costo_estimado_usd": 0.0063605,
     "error": null
   }
 }

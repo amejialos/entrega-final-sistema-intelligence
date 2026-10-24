@@ -147,6 +147,7 @@ def resumir(escenario: str, job: dict[str, Any], **extra: Any) -> dict[str, Any]
         "latencia_ejecucion_s": m.get("latencia_ejecucion_s"),
         "espera_aprobacion_s": m.get("espera_aprobacion_s"),
         "llamadas_llm": m.get("llamadas_llm"),
+        "llamadas_fallidas": m.get("llamadas_fallidas"),
         "tokens_entrada": m.get("tokens_entrada"),
         "tokens_salida": m.get("tokens_salida"),
         "costo_estimado_usd": m.get("costo_estimado_usd"),

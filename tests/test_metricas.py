@@ -63,3 +63,20 @@ async def test_el_job_devuelve_latencia_tokens_y_costo(publicador):
     assert m["costo_estimado_usd"] == pytest.approx((500 * 1 + 100 * 2) / 1e6)
     assert m["latencia_total_s"] >= m["latencia_ejecucion_s"] > 0
     assert m["corridas"] == 1 and m["modelos_sin_precio"] == []
+
+
+async def test_las_llamadas_que_fallan_se_cuentan_aparte_como_en_phoenix():
+    """Un 503 reintentado deja un span LLM en ERROR (0 tokens) en Phoenix: la API lo cuenta en llamadas_fallidas."""
+    import openai
+
+    from tests.test_sintesis import _ModeloQueFalla, _rate_limit
+
+    contador = MetricasLLM({})
+    falla = _ModeloQueFalla(respuestas=[], error=_rate_limit())
+    with pytest.raises(openai.RateLimitError):
+        await falla.ainvoke([HumanMessage("hola")], config={"callbacks": [contador]})
+    await FakeToolModel(respuestas=[AIMessage("uno")]).ainvoke([HumanMessage("hola")], config={"callbacks": [contador]})
+
+    metricas = contador.metricas(latencia_ejecucion_s=1.0)
+    assert metricas.llamadas_llm == 1 and metricas.llamadas_fallidas == 1
+    assert metricas.sumar(metricas).llamadas_fallidas == 2

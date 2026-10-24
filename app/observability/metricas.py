@@ -45,7 +45,10 @@ class Metricas(BaseModel):
     latencia_ejecucion_s: float = Field(default=0.0, description="Tiempo corriendo el grafo (suma de corridas).")
     espera_aprobacion_s: float | None = Field(default=None, description="Tiempo en WAITING_APPROVAL.")
     corridas: int = Field(default=0, description="1 sin HITL; 2 con pausa y reanudación.")
-    llamadas_llm: int = 0
+    llamadas_llm: int = Field(default=0, description="Llamadas al LLM que respondieron.")
+    llamadas_fallidas: int = Field(
+        default=0, description="Llamadas que fallaron (429, 503, timeout) y se reintentaron: en Phoenix son spans en ERROR."
+    )
     tokens_entrada: int = 0
     tokens_salida: int = 0
     tokens_totales: int = 0
@@ -68,6 +71,7 @@ class Metricas(BaseModel):
             espera_aprobacion_s=otra.espera_aprobacion_s if otra.espera_aprobacion_s is not None else self.espera_aprobacion_s,
             corridas=self.corridas + otra.corridas,
             llamadas_llm=self.llamadas_llm + otra.llamadas_llm,
+            llamadas_fallidas=self.llamadas_fallidas + otra.llamadas_fallidas,
             tokens_entrada=self.tokens_entrada + otra.tokens_entrada,
             tokens_salida=self.tokens_salida + otra.tokens_salida,
             tokens_totales=self.tokens_totales + otra.tokens_totales,
@@ -98,6 +102,7 @@ class MetricasLLM(BaseCallbackHandler):
         self._lock = threading.Lock()
         self._modelo_por_run: dict[UUID, str] = {}
         self.uso: dict[str, UsoModelo] = {}
+        self.fallidas = 0
 
     def on_chat_model_start(
         self,
@@ -126,6 +131,11 @@ class MetricasLLM(BaseCallbackHandler):
                 uso.tokens_entrada += int(usage.get("input_tokens", 0))
                 uso.tokens_salida += int(usage.get("output_tokens", 0))
 
+    def on_llm_error(self, error: BaseException, *, run_id: UUID, **kwargs: Any) -> None:
+        self._modelo_por_run.pop(run_id, None)
+        with self._lock:
+            self.fallidas += 1
+
     def metricas(self, latencia_ejecucion_s: float) -> Metricas:
         """Resumen de la corrida, con el costo estimado por modelo."""
         por_modelo: dict[str, UsoModelo] = {}
@@ -142,6 +152,7 @@ class MetricasLLM(BaseCallbackHandler):
             latencia_ejecucion_s=round(latencia_ejecucion_s, 3),
             corridas=1,
             llamadas_llm=sum(u.llamadas for u in por_modelo.values()),
+            llamadas_fallidas=self.fallidas,
             tokens_entrada=entrada,
             tokens_salida=salida,
             tokens_totales=entrada + salida,

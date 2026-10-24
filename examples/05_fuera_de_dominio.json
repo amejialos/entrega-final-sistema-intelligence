@@ -1,7 +1,7 @@
 {
   "escenario": "05_fuera_de_dominio",
   "descripcion": "Pregunta ajena a Caudal: el supervisor la marca fuera de dominio y no se busca ni se inventa nada.",
-  "fecha": "2026-10-15T08:16:37",
+  "fecha": "2026-10-24T11:40:12",
   "pasos": [
     {
       "nota": "",
@@ -10,32 +10,32 @@
         "pregunta": "¿Quién ganó el Mundial de fútbol de 2022 y cuántos goles hizo Messi?"
       },
       "status": 202,
-      "ms": 10.4,
+      "ms": 8.0,
       "respuesta": {
-        "job_id": "ff691bff292b4c5abcfaa6be058e66b9",
-        "thread_id": "b39a68157adb43e0bfa8225660d991ef",
+        "job_id": "8ebaf5e6fd664468abb7cd0e9bb1a4e9",
+        "thread_id": "4c905971bde34414b805800244ac34e8",
         "status": "PENDING",
         "links": {
-          "estado": "/tasks/ff691bff292b4c5abcfaa6be058e66b9",
-          "conversacion": "/conversations/b39a68157adb43e0bfa8225660d991ef",
+          "estado": "/tasks/8ebaf5e6fd664468abb7cd0e9bb1a4e9",
+          "conversacion": "/conversations/4c905971bde34414b805800244ac34e8",
           "aprobar": null
         }
       }
     },
     {
       "nota": "polling hasta DONE",
-      "pedido": "GET /tasks/ff691bff292b4c5abcfaa6be058e66b9",
+      "pedido": "GET /tasks/8ebaf5e6fd664468abb7cd0e9bb1a4e9",
       "status": 200,
       "respuesta": {
-        "job_id": "ff691bff292b4c5abcfaa6be058e66b9",
-        "thread_id": "b39a68157adb43e0bfa8225660d991ef",
+        "job_id": "8ebaf5e6fd664468abb7cd0e9bb1a4e9",
+        "thread_id": "4c905971bde34414b805800244ac34e8",
         "status": "DONE",
         "pregunta": "¿Quién ganó el Mundial de fútbol de 2022 y cuántos goles hizo Messi?",
         "publicar": false,
-        "created_at": "2026-10-15T11:16:37.154+00:00",
-        "updated_at": "2026-10-15T11:16:47.916+00:00",
-        "started_at": "2026-10-15T11:16:37.159+00:00",
-        "finished_at": "2026-10-15T11:16:47.916+00:00",
+        "created_at": "2026-10-24T14:40:12.132+00:00",
+        "updated_at": "2026-10-24T14:40:18.586+00:00",
+        "started_at": "2026-10-24T14:40:12.136+00:00",
+        "finished_at": "2026-10-24T14:40:18.586+00:00",
         "resultado": {
           "respuesta": "Esta pregunta está fuera del alcance del sistema. Respondo consultas sobre la librería de ingesta Caudal (instalación, configuración, conectores, rendimiento, seguridad, errores y changelog) y cálculos sobre esos datos, como lotes y tiempos de procesamiento. No busqué ni inventé información sobre otros temas.",
           "fuentes": [],
@@ -55,21 +55,21 @@
         "aprobacion_pendiente": null,
         "aprobacion": null,
         "metricas": {
-          "latencia_total_s": 10.761,
-          "latencia_ejecucion_s": 10.748,
+          "latencia_total_s": 6.454,
+          "latencia_ejecucion_s": 6.439,
           "espera_aprobacion_s": null,
           "corridas": 1,
           "llamadas_llm": 1,
           "tokens_entrada": 703,
-          "tokens_salida": 102,
-          "tokens_totales": 805,
-          "costo_estimado_usd": 0.0004659,
+          "tokens_salida": 115,
+          "tokens_totales": 818,
+          "costo_estimado_usd": 0.0004984,
           "por_modelo": {
             "gemini-flash-lite-latest": {
               "llamadas": 1,
               "tokens_entrada": 703,
-              "tokens_salida": 102,
-              "costo_estimado_usd": 0.0004659
+              "tokens_salida": 115,
+              "costo_estimado_usd": 0.0004984
             }
           },
           "modelos_sin_precio": []
@@ -77,18 +77,40 @@
         "eventos": [
           {
             "status": "PENDING",
-            "t": "2026-10-15T11:16:37.154+00:00",
+            "t": "2026-10-24T14:40:12.132+00:00",
             "por": null
           },
           {
             "status": "RUNNING",
-            "t": "2026-10-15T11:16:37.159+00:00",
+            "t": "2026-10-24T14:40:12.136+00:00",
             "por": null
           },
           {
             "status": "DONE",
-            "t": "2026-10-15T11:16:47.916+00:00",
+            "t": "2026-10-24T14:40:18.586+00:00",
             "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:40:18.565+00:00",
+            "detalle": "-> synthesizer: La pregunta trata sobre deportes (el Mundial de fútbol de 2022) y está totalmente fuera del dominio de la librería de ingesta de datos Caudal."
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:40:18.573+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:40:18.577+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "cerrar_turno",
+            "t": "2026-10-24T14:40:18.580+00:00",
+            "detalle": null
           }
         ]
       }
@@ -96,8 +118,8 @@
   ],
   "resumen": {
     "escenario": "05 fuera de dominio",
-    "job_id": "ff691bff292b4c5abcfaa6be058e66b9",
-    "thread_id": "b39a68157adb43e0bfa8225660d991ef",
+    "job_id": "8ebaf5e6fd664468abb7cd0e9bb1a4e9",
+    "thread_id": "4c905971bde34414b805800244ac34e8",
     "status": "DONE",
     "estados": "PENDING → RUNNING → DONE",
     "ruta_supervisor": [
@@ -107,13 +129,13 @@
     "fuentes": 0,
     "fuera_de_dominio": true,
     "reporte_publicado": null,
-    "latencia_total_s": 10.761,
-    "latencia_ejecucion_s": 10.748,
+    "latencia_total_s": 6.454,
+    "latencia_ejecucion_s": 6.439,
     "espera_aprobacion_s": null,
     "llamadas_llm": 1,
     "tokens_entrada": 703,
-    "tokens_salida": 102,
-    "costo_estimado_usd": 0.0004659,
+    "tokens_salida": 115,
+    "costo_estimado_usd": 0.0004984,
     "error": null
   }
 }

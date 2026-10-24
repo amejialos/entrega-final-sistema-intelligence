@@ -1,7 +1,7 @@
 {
   "escenario": "06_validacion_y_errores",
   "descripcion": "Contratos de la API: 422 de Pydantic, 404 y 409. No llama a ningún LLM.",
-  "fecha": "2026-10-15T08:11:09",
+  "fecha": "2026-10-24T11:40:21",
   "pasos": [
     {
       "nota": "422: pregunta < 10 caracteres",
@@ -10,7 +10,7 @@
         "pregunta": "corta"
       },
       "status": 422,
-      "ms": 2.6,
+      "ms": 4.2,
       "respuesta": {
         "detail": [
           {
@@ -36,7 +36,7 @@
         "publicar": "quizás"
       },
       "status": 422,
-      "ms": 1.2,
+      "ms": 1.6,
       "respuesta": {
         "detail": [
           {
@@ -59,7 +59,7 @@
         "thread_id": "con espacios!"
       },
       "status": 422,
-      "ms": 1.2,
+      "ms": 1.3,
       "respuesta": {
         "detail": [
           {
@@ -85,7 +85,7 @@
         "prioridad": "alta"
       },
       "status": 422,
-      "ms": 1.1,
+      "ms": 1.3,
       "respuesta": {
         "detail": [
           {
@@ -108,7 +108,7 @@
         "k": 50
       },
       "status": 422,
-      "ms": 1.7,
+      "ms": 2.2,
       "respuesta": {
         "detail": [
           {
@@ -131,7 +131,7 @@
       "pedido": "GET /tasks/no-es-un-id",
       "body": null,
       "status": 422,
-      "ms": 1.3,
+      "ms": 1.4,
       "respuesta": {
         "detail": [
           {
@@ -154,7 +154,7 @@
       "pedido": "GET /tasks/00000000000000000000000000000000",
       "body": null,
       "status": 404,
-      "ms": 1.4,
+      "ms": 2.0,
       "respuesta": {
         "detail": "No existe el job 00000000000000000000000000000000."
       }
@@ -166,9 +166,44 @@
         "aprobado": true
       },
       "status": 404,
-      "ms": 1.5,
+      "ms": 3.4,
       "respuesta": {
         "detail": "No existe el job 00000000000000000000000000000000."
+      }
+    },
+    {
+      "nota": "401: clave de revisor inválida",
+      "pedido": "POST /tasks/00000000000000000000000000000000/approve",
+      "body": {
+        "aprobado": true
+      },
+      "status": 401,
+      "ms": 1.9,
+      "respuesta": {
+        "detail": "Falta la clave de revisor o no es válida (header X-Reviewer-Key)."
+      }
+    },
+    {
+      "nota": "422: el revisor sale de la clave",
+      "pedido": "POST /tasks/00000000000000000000000000000000/approve",
+      "body": {
+        "aprobado": true,
+        "revisor": "yo"
+      },
+      "status": 422,
+      "ms": 1.5,
+      "respuesta": {
+        "detail": [
+          {
+            "type": "extra_forbidden",
+            "loc": [
+              "body",
+              "revisor"
+            ],
+            "msg": "Extra inputs are not permitted",
+            "input": "yo"
+          }
+        ]
       }
     },
     {
@@ -179,7 +214,7 @@
         "k": 3
       },
       "status": 200,
-      "ms": 1418.5,
+      "ms": 2160.2,
       "respuesta": {
         "consulta": "¿Qué significa el error CAU-417?",
         "modo": "hibrido",
@@ -228,7 +263,7 @@
             "contenido": "Seguridad y manejo de secretos - Secretos con Bóveda\n\nCaudal nunca debería recibir contraseñas o tokens escritos en el código del pipeline. Para eso existe la integración con Bóveda, el gestor de secretos de Caudal, que resuelve referencias a secretos en el momento de arrancar el flujo. En lugar de escribir la contraseña, escribís una referencia con el formato `boveda://ruta/al/secreto`:\n\n```python\nfuente = KafkaFuente(\n    servidores=\"broker:9092\",\n    topicos=[\"pagos\"],\n    grupo=\"conciliacion\",\n    config_extra={\"sasl.password\": \"boveda://kafka/pagos/password\"},\n)\n```\n\nBóveda soporta varios proveedores de secretos. El proveedor `entorno` lee variables de entorno y está pensado para desarrollo local. El proveedor `vault` se conecta a HashiCorp Vault usando el token de la variable `VAULT_TOKEN` o autenticación por rol de Kubernetes. El proveedor `aws` lee de AWS Secrets Manager. El proveedor activo se elige con `CaudalConfig(proveedor_secretos=\"vault\")`.\n\nLos secretos resueltos se guardan solamente en memoria y nunca se escriben en los checkpoints ni en los logs. Si un secreto rota mientras el flujo corre, Bóveda lo vuelve a leer cuando el conector reporta un error de autenticación (`CAU-401`) y reintenta una vez antes de fallar. Esa renovación automática se puede desactivar con `renovar_secretos=False`."
           }
         ],
-        "latencia_ms": 1414.6
+        "latencia_ms": 2155.9
       }
     }
   ],
@@ -244,6 +279,8 @@
       422,
       404,
       404,
+      401,
+      422,
       200
     ]
   }

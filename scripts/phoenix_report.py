@@ -97,6 +97,7 @@ async def analizar(url: str, nombre: str) -> dict[str, Any]:
     costo_traza: dict[str, float] = defaultdict(float)
     tokens_traza: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     llm_traza: dict[str, int] = defaultdict(int)
+    llm_error_traza: dict[str, int] = defaultdict(int)
     por_nodo: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     recuperaciones = []
     for s in todos:
@@ -107,6 +108,8 @@ async def analizar(url: str, nombre: str) -> dict[str, Any]:
             tokens_traza[traza][0] += s["tokenCountPrompt"] or 0
             tokens_traza[traza][1] += s["tokenCountCompletion"] or 0
             llm_traza[traza] += 1
+            if (s["statusCode"] or "").upper() == "ERROR":  # p. ej. un 503 que la RetryPolicy reintentó
+                llm_error_traza[traza] += 1
             nodo = por_nodo[nodo_del_grafo(s, por_id)]
             nodo["llamadas_llm"] += 1
             nodo["tokens_entrada"] += s["tokenCountPrompt"] or 0
@@ -130,6 +133,7 @@ async def analizar(url: str, nombre: str) -> dict[str, Any]:
                 "estado": r["statusCode"],
                 "latencia_s": round((r["latencyMs"] or 0) / 1000, 2),
                 "llamadas_llm": llm_traza[traza],
+                "llamadas_llm_error": llm_error_traza[traza],
                 "tokens_entrada": tokens_traza[traza][0],
                 "tokens_salida": tokens_traza[traza][1],
                 "costo_usd": round(costo_traza[traza], 6),
@@ -143,6 +147,7 @@ async def analizar(url: str, nombre: str) -> dict[str, Any]:
             j["tokens_entrada"] += t["tokens_entrada"]
             j["tokens_salida"] += t["tokens_salida"]
             j["llamadas_llm"] += t["llamadas_llm"]
+            j["llamadas_llm_error"] += t["llamadas_llm_error"]
     return {
         "fecha": datetime.now().isoformat(timespec="seconds"),
         "proyecto": nombre,
@@ -181,7 +186,9 @@ def control_cruzado(rep: dict[str, Any]) -> list[dict[str, Any]]:
                 "api_tokens": f"{r.get('tokens_entrada')}/{r.get('tokens_salida')}",
                 "phoenix_tokens": f"{ph['tokens_entrada']:.0f}/{ph['tokens_salida']:.0f}",
                 "api_llamadas": r.get("llamadas_llm"),
+                "api_llamadas_fallidas": r.get("llamadas_fallidas"),
                 "phoenix_llamadas": int(ph["llamadas_llm"]),
+                "phoenix_llamadas_error": int(ph.get("llamadas_llm_error", 0)),
             }
         )
     return filas
@@ -224,13 +231,18 @@ def a_markdown(rep: dict[str, Any], cruce: list[dict[str, Any]]) -> str:
             "",
             "## Control cruzado: métricas de la API vs. Phoenix (mismo job)",
             "",
-            "| escenario | job | costo API (US$) | costo Phoenix (US$) | tokens API | tokens Phoenix | LLM API | LLM Phoenix |",
+            "Las llamadas que fallaron (p. ej. un 503 de alta demanda que la `RetryPolicy` reintentó) quedan en",
+            "Phoenix como spans LLM en ERROR con 0 tokens: no cambian el costo ni los tokens. La API las cuenta",
+            "en `metricas.llamadas_fallidas`.",
+            "",
+            "| escenario | job | costo API (US$) | costo Phoenix (US$) | tokens API | tokens Phoenix | LLM API (ok) | LLM Phoenix (ok + en ERROR) |",
             "|---|---|---|---|---|---|---|---|",
         ]
         for f in cruce:
             lineas.append(
                 f"| {f['escenario']} | `{f['job_id'][:8]}` | {f['api_costo_usd']} | {f['phoenix_costo_usd']:.6f} | {f['api_tokens']} "
-                f"| {f['phoenix_tokens']} | {f['api_llamadas']} | {f['phoenix_llamadas']} |"
+                f"| {f['phoenix_tokens']} | {f['api_llamadas']} "
+                f"| {f['phoenix_llamadas'] - f['phoenix_llamadas_error']} + {f['phoenix_llamadas_error']} |"
             )
     return "\n".join(lineas) + "\n"
 
