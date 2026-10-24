@@ -6,7 +6,13 @@ from langchain_core.messages import HumanMessage, ToolMessage
 
 from app.agents.common import es_error_transitorio
 from app.core.config import Settings
-from app.core.providers import EXTRA_CONTENT_KEY, ChatOpenAICompatible, build_embeddings, build_model
+from app.core.providers import (
+    EXTRA_CONTENT_KEY,
+    ChatOpenAICompatible,
+    build_embeddings,
+    build_fallback_sintesis,
+    build_model,
+)
 
 FIRMA = {"google": {"thought_signature": "firma-opaca"}}
 
@@ -103,3 +109,14 @@ def test_reintenta_timeouts_y_caidas_de_red():
     assert es_error_transitorio(openai.APIConnectionError(request=pedido))
     assert es_error_transitorio(httpx.ConnectError("sin red", request=pedido))
     assert not es_error_transitorio(ValueError("un bug no se reintenta"))
+
+
+def test_solo_la_sintesis_hace_streaming_y_el_fallback_es_opcional():
+    settings = _settings(synth_model="modelo-sintesis", synth_fallback_model="modelo-reserva")
+    sintesis = build_model(settings, "synth")
+    assert sintesis.disable_streaming is False and sintesis.stream_usage is True  # tokens + uso para el costo
+    for rol in ("supervisor", "research", "analyst"):
+        assert build_model(settings, rol).disable_streaming is True  # tool calls: la thought signature
+    reserva = build_fallback_sintesis(settings)
+    assert reserva is not None and reserva.model_name == "modelo-reserva" and reserva.disable_streaming is False
+    assert build_fallback_sintesis(_settings()) is None

@@ -76,6 +76,7 @@ def build_graph(
     analyst_model: BaseChatModel,
     synth_model: BaseChatModel,
     search_tool: BaseTool,
+    synth_fallback_model: BaseChatModel | None = None,
     max_steps: int = MAX_STEPS,
     turnos_de_contexto: int = 3,
     structured_method: str = "json_schema",
@@ -96,7 +97,9 @@ def build_graph(
     )
     builder.add_node("researcher", make_research_node(research_agent), retry_policy=retry_policy)
     builder.add_node("analyst", make_analyst_node(analyst_agent), retry_policy=retry_policy)
-    builder.add_node("synthesizer", make_synthesizer_node(synth_model, turnos_de_contexto), retry_policy=retry_policy)
+    builder.add_node(
+        "synthesizer", make_synthesizer_node(synth_model, turnos_de_contexto, synth_fallback_model), retry_policy=retry_policy
+    )
     builder.add_node("evaluar_criticidad", evaluar_criticidad)
     builder.add_node("aprobacion_humana", aprobacion_humana)
     builder.add_node(ACCION_CRITICA, make_publicar_node(publicador or _publicador_no_configurado))

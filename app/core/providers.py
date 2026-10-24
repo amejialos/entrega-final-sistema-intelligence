@@ -84,9 +84,16 @@ def _rate_limiter(modelo: str, rpm: float | None) -> InMemoryRateLimiter | None:
     return limitador
 
 
-def build_model(settings: Settings, rol: Rol) -> ChatOpenAICompatible:
-    """Modelo del rol con la key, el endpoint y el límite de pedidos por minuto de `settings`."""
-    modelo = settings.modelo_para(rol)
+def build_model(settings: Settings, rol: Rol, modelo: str | None = None) -> ChatOpenAICompatible:
+    """Modelo del rol con la key, el endpoint y el límite de pedidos por minuto de `settings`.
+
+    Solo la síntesis hace streaming de tokens: no usa herramientas, así que no hay thought
+    signatures que rescatar, y su texto es lo que el usuario ve escribirse en el stream SSE.
+    `stream_usage=True` hace que el endpoint mande el uso de tokens al final del stream, así el
+    costo por respuesta se sigue calculando igual que sin streaming.
+    """
+    modelo = modelo or settings.modelo_para(rol)
+    streaming = rol == "synth"
     return ChatOpenAICompatible(
         model=modelo,
         api_key=settings.openai_api_key,
@@ -97,8 +104,17 @@ def build_model(settings: Settings, rol: Rol) -> ChatOpenAICompatible:
         max_retries=0,
         timeout=settings.llm_timeout_s,
         rate_limiter=_rate_limiter(modelo, settings.llm_rpm),
-        disable_streaming=True,  # el rescate de extra_content está en la ruta sin streaming
+        # El rescate de extra_content (thought signatures de las tool calls) está en la ruta sin streaming.
+        disable_streaming=not streaming,
+        stream_usage=streaming,
     )
+
+
+def build_fallback_sintesis(settings: Settings) -> ChatOpenAICompatible | None:
+    """Modelo alternativo de la síntesis (`SYNTH_FALLBACK_MODEL`), o None si no está configurado."""
+    if not settings.synth_fallback_model:
+        return None
+    return build_model(settings, "synth", settings.synth_fallback_model)
 
 
 def build_embeddings(settings: Settings) -> Embeddings:

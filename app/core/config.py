@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     research_model: str | None = None
     analyst_model: str | None = None
     synth_model: str | None = None
+    synth_fallback_model: str | None = Field(
+        default=None, description="Modelo alternativo de la síntesis si el principal falla (429, 5xx, timeout)."
+    )
     supervisor_structured_method: Literal["json_schema", "function_calling", "json_mode"] = "json_schema"
     llm_rpm: float | None = Field(default=None, gt=0, description="Pedidos por minuto POR MODELO (free tier).")
     llm_timeout_s: float = Field(default=90, gt=0)
@@ -108,7 +111,14 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _modelos_por_rol(self) -> "Settings":
         # Un string con espacios sería un modelo inexistente que recién fallaría en el primer pedido.
-        for campo in ("openai_model", "supervisor_model", "research_model", "analyst_model", "synth_model"):
+        for campo in (
+            "openai_model",
+            "supervisor_model",
+            "research_model",
+            "analyst_model",
+            "synth_model",
+            "synth_fallback_model",
+        ):
             valor = getattr(self, campo)
             if valor is not None and valor != valor.strip():
                 setattr(self, campo, valor.strip())

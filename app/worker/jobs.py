@@ -5,6 +5,7 @@ Claves (con el prefijo `REDIS_PREFIJO`, por defecto `final`):
     final:job:{job_id}              hash con el estado del job (lo valida `JobRecord`)
     final:job:{job_id}:eventos      lista con cada transición de estado y su hora
     final:job:{job_id}:pasos        lista con cada nodo del grafo que terminó (streaming del progreso)
+    final:job:{job_id}:borrador     texto que va escribiendo el modelo de síntesis (streaming de tokens)
     final:jobs                      sorted set por fecha de creación (GET /tasks)
     final:thread:{thread_id}:jobs   lista con los jobs (turnos) de una conversación
     final:thread:{thread_id}:activo el job que está usando la conversación ahora (candado)
@@ -66,6 +67,9 @@ class JobStore:
 
     def _pasos(self, job_id: str) -> str:
         return f"{self.clave(job_id)}:pasos"
+
+    def _borrador(self, job_id: str) -> str:
+        return f"{self.clave(job_id)}:borrador"
 
     def _jobs_hilo(self, thread_id: str) -> str:
         return f"{self.prefijo}:thread:{thread_id}:jobs"
@@ -146,6 +150,18 @@ class JobStore:
             pipe.rpush(self._pasos(job_id), paso.model_dump_json(exclude_none=True))
             pipe.expire(self._pasos(job_id), self.ttl)
             await pipe.execute()
+
+    async def agregar_borrador(self, job_id: str, texto: str, reiniciar: bool = False) -> None:
+        """Suma tokens al borrador de la respuesta. `reiniciar` lo vacía antes (reintento del modelo)."""
+        async with self.redis.pipeline(transaction=True) as pipe:
+            if reiniciar:
+                pipe.delete(self._borrador(job_id))
+            pipe.append(self._borrador(job_id), texto)
+            pipe.expire(self._borrador(job_id), self.ttl)
+            await pipe.execute()
+
+    async def leer_borrador(self, job_id: str) -> str:
+        return await self.redis.get(self._borrador(job_id)) or ""
 
     async def tomar_aprobacion(self, job_id: str, decision: DecisionHumana) -> bool:
         """WAITING_APPROVAL -> PENDING de forma atómica (WATCH/MULTI). False si no estaba esperando."""

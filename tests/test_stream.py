@@ -4,7 +4,7 @@
 import json
 from typing import Any
 
-from tests.conftest import PREGUNTA, levantar_api, orquestador
+from tests.conftest import PREGUNTA, RESPUESTA, levantar_api, orquestador
 
 
 async def _leer_sse(api, job_id: str) -> list[tuple[str, dict[str, Any]]]:
@@ -57,3 +57,17 @@ async def test_stream_de_un_job_inexistente_es_404(publicador):
     async with levantar_api(orquestador(publicador)) as api:
         r = await api.client.get(f"/tasks/{'0' * 32}/stream")
         assert r.status_code == 404
+
+
+async def test_stream_transmite_los_tokens_de_la_sintesis_antes_de_que_termine(publicador):
+    """Lo que escribe el modelo de síntesis llega como eventos `token`; juntos forman la respuesta final."""
+    async with levantar_api(orquestador(publicador)) as api:
+        job_id = await api.crear(PREGUNTA)
+        eventos = await _leer_sse(api, job_id)
+        job = (await api.client.get(f"/tasks/{job_id}")).json()
+
+    texto = "".join(d["texto"] for t, d in eventos if t == "token")
+    # Exactamente la respuesta: ni el supervisor ni el investigador (que también llaman a un modelo) se cuelan.
+    assert texto == job["resultado"]["respuesta"] == RESPUESTA
+    tipos = [t if t != "nodo" else f"nodo:{d['nodo']}" for t, d in eventos]
+    assert tipos.index("token") < tipos.index("nodo:synthesizer")  # se ve mientras se escribe

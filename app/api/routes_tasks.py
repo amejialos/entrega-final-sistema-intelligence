@@ -5,6 +5,7 @@ un POST tarda milisegundos aunque la corrida del grafo tarde minutos.
 """
 
 import asyncio
+import json
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -83,13 +84,22 @@ def _sse(evento: str, datos: str) -> str:
 
 
 async def _eventos_sse(job_id: str, store: JobStore, request: Request) -> AsyncIterator[str]:
-    """Transmite estados y nodos nuevos (intercalados por hora) hasta DONE/FAILED o WAITING_APPROVAL."""
-    vistos_estados = vistos_pasos = 0
+    """Transmite tokens de la síntesis, estados y nodos nuevos hasta DONE/FAILED o WAITING_APPROVAL."""
+    vistos_estados = vistos_pasos = vistos_borrador = 0
     sin_novedades_s = 0.0
     while True:
         job = await store.get(job_id)
         if job is None:  # venció el TTL o se borró mientras se transmitía
             return
+        # Primero el texto nuevo de la síntesis: el nodo `synthesizer` "termina" después de escribirlo.
+        borrador = await store.leer_borrador(job_id)
+        if len(borrador) < vistos_borrador:  # el modelo reintentó y el borrador volvió a empezar
+            yield _sse("reinicio", "{}")
+            vistos_borrador = 0
+        texto_nuevo = borrador[vistos_borrador:]
+        if texto_nuevo:
+            yield _sse("token", json.dumps({"texto": texto_nuevo}, ensure_ascii=False))
+            vistos_borrador = len(borrador)
         nuevos = [("estado", e.t, e.model_dump_json(exclude_none=True)) for e in job.eventos[vistos_estados:]]
         nuevos += [("nodo", p.t, p.model_dump_json(exclude_none=True)) for p in job.pasos[vistos_pasos:]]
         vistos_estados, vistos_pasos = len(job.eventos), len(job.pasos)
@@ -99,7 +109,7 @@ async def _eventos_sse(job_id: str, store: JobStore, request: Request) -> AsyncI
             # El último evento trae el job completo (resultado o lo que hay que aprobar).
             yield _sse("fin", job.model_dump_json(exclude={"eventos", "pasos"}))
             return
-        sin_novedades_s = 0.0 if nuevos else sin_novedades_s + INTERVALO_STREAM_S
+        sin_novedades_s = 0.0 if nuevos or texto_nuevo else sin_novedades_s + INTERVALO_STREAM_S
         if sin_novedades_s >= LATIDO_S:
             sin_novedades_s = 0.0
             yield ": latido\n\n"

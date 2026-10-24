@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 async def recursos_desde_settings(settings: Settings, iniciar_worker: bool = True) -> AsyncIterator[Recursos]:
     """Producción: Redis real, `AsyncRedisSaver`, Pinecone async + BM25, Gemini/OpenAI y trazas a Phoenix."""
     from app.agents.researcher import crear_herramienta_busqueda
-    from app.core.providers import build_model
+    from app.core.providers import build_fallback_sintesis, build_model
     from app.graph.builder import build_graph
     from app.graph.checkpointer import redis_checkpointer
     from app.graph.hitl import publicador_redis
@@ -56,6 +56,7 @@ async def recursos_desde_settings(settings: Settings, iniciar_worker: bool = Tru
             research_model=build_model(settings, "research"),
             analyst_model=build_model(settings, "analyst"),
             synth_model=build_model(settings, "synth"),
+            synth_fallback_model=build_fallback_sintesis(settings),
             search_tool=crear_herramienta_busqueda(rag, k=settings.rag_top_k),
             max_steps=settings.max_steps,
             turnos_de_contexto=settings.turnos_de_contexto,

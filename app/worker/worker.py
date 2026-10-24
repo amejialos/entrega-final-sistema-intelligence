@@ -25,6 +25,7 @@ import logging
 import time
 from typing import Any
 
+from langchain_core.messages import AIMessage
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from pydantic import ValidationError
@@ -200,12 +201,22 @@ class Worker:
 
             inicio = time.perf_counter()
             try:
-                # `astream` en vez de `ainvoke`: mismo resultado, pero cada nodo que termina queda
-                # registrado en Redis y `GET /tasks/{id}/stream` lo transmite en vivo.
-                async for actualizacion in self.graph.astream(entrada, config, stream_mode="updates"):
-                    for nodo, cambios in actualizacion.items():
-                        if not nodo.startswith("__"):  # "__interrupt__" no es un nodo
-                            await self.store.registrar_paso(job_id, nodo, detalle_paso(nodo, cambios))
+                # `astream` en vez de `ainvoke`: mismo resultado, pero cada nodo que termina ("updates")
+                # y cada token del modelo de síntesis ("messages") quedan en Redis, y
+                # `GET /tasks/{id}/stream` los transmite en vivo.
+                mensaje_en_curso: str | None = None
+                async for modo, datos in self.graph.astream(entrada, config, stream_mode=["updates", "messages"]):
+                    if modo == "updates":
+                        for nodo, cambios in datos.items():
+                            if not nodo.startswith("__"):  # "__interrupt__" no es un nodo
+                                await self.store.registrar_paso(job_id, nodo, detalle_paso(nodo, cambios))
+                        continue
+                    trozo, meta = datos
+                    if es_token_de_sintesis(trozo, meta):
+                        # Un id de mensaje nuevo con texto ya escrito = el modelo reintentó: se empieza de cero.
+                        reiniciar = mensaje_en_curso is not None and trozo.id != mensaje_en_curso
+                        mensaje_en_curso = trozo.id
+                        await self.store.agregar_borrador(job_id, trozo.text, reiniciar=reiniciar)
             finally:
                 metricas_corrida = contador.metricas(time.perf_counter() - inicio)
 
@@ -287,3 +298,13 @@ def detalle_paso(nodo: str, cambios: Any) -> str | None:
     if cambios.get("motivos_criticidad"):
         return "tarea crítica: pide aprobación humana"
     return None
+
+
+def es_token_de_sintesis(trozo: Any, meta: dict[str, Any]) -> bool:
+    """Texto generado por el MODELO dentro del nodo de síntesis (no los mensajes que escriben los nodos)."""
+    return (
+        meta.get("langgraph_node") == "synthesizer"
+        and "ls_model_type" in meta  # viene de una llamada al modelo, no del estado del grafo
+        and isinstance(trozo, AIMessage)
+        and bool(trozo.text)
+    )
