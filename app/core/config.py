@@ -96,6 +96,11 @@ class Settings(BaseSettings):
     phoenix_collector_endpoint: str = "http://localhost:6006/v1/traces"
     phoenix_project_name: str = "entrega-final"
 
+    # --- Seguridad: quién puede aprobar las tareas críticas (human-in-the-loop) ---
+    reviewer_api_key: SecretStr | None = Field(
+        default=None, description="Si está definida, POST /tasks/{id}/approve exige el header X-Reviewer-Key."
+    )
+
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     @model_validator(mode="after")
@@ -105,6 +110,8 @@ class Settings(BaseSettings):
             valor = getattr(self, campo)
             if valor is not None and valor != valor.strip():
                 setattr(self, campo, valor.strip())
+        if self.reviewer_api_key is not None and len(self.reviewer_api_key.get_secret_value()) < 16:
+            raise ValueError("REVIEWER_API_KEY tiene que tener al menos 16 caracteres (o no definirla).")
         return self
 
     def modelo_para(self, rol: Rol) -> str:

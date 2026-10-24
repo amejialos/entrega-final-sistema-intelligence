@@ -6,9 +6,9 @@ un POST tarda milisegundos aunque la corrida del grafo tarde minutos.
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 
-from app.api.deps import RecursosDep
+from app.api.deps import RecursosDep, requiere_revisor
 from app.api.schemas import (
     PATRON_JOB_ID,
     AprobacionAceptada,
@@ -82,7 +82,9 @@ async def listar_tareas(recursos: RecursosDep, limite: int = Query(20, ge=1, le=
     status_code=status.HTTP_202_ACCEPTED,
     response_model=AprobacionAceptada,
     tags=["human-in-the-loop"],
+    dependencies=[Depends(requiere_revisor)],
     responses={
+        401: {"model": ErrorOut, "description": "Falta X-Reviewer-Key o no es válida (si hay REVIEWER_API_KEY)."},
         404: {"model": ErrorOut, "description": "No existe el job."},
         409: {"model": ErrorOut, "description": "El job no está en WAITING_APPROVAL (o ya se aprobó)."},
     },

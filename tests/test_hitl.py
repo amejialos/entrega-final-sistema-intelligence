@@ -163,3 +163,29 @@ async def test_la_pausa_sobrevive_a_un_reinicio_porque_vive_en_el_checkpoint(pub
         assert job["status"] == "DONE"
         assert job["resultado"]["respuesta"] == RESPUESTA  # vino del checkpoint: ningún LLM se volvió a llamar
         assert job["resultado"]["reporte_publicado"] == f"fake:reporte:{job_id}"
+
+
+async def test_con_reviewer_api_key_solo_aprueba_quien_tiene_la_clave(publicador):
+    """REVIEWER_API_KEY definida: sin header o con una clave equivocada, 401 y el job sigue pausado."""
+    async with levantar_api(orquestador(publicador), clave_revisor="clave-de-revisor-larga") as api:
+        job_id = await api.crear(PREGUNTA, publicar=True)
+        await api.esperar(job_id, "WAITING_APPROVAL")
+        assert (await api.client.get("/health")).json()["aprobacion"] == "protegida"
+
+        sin_clave = await api.client.post(f"/tasks/{job_id}/approve", json={"aprobado": True})
+        equivocada = await api.client.post(
+            f"/tasks/{job_id}/approve", json={"aprobado": True}, headers={"X-Reviewer-Key": "otra"}
+        )
+        assert sin_clave.status_code == equivocada.status_code == 401
+        assert (await api.client.get(f"/tasks/{job_id}")).json()["status"] == "WAITING_APPROVAL"
+
+        ok = await api.client.post(
+            f"/tasks/{job_id}/approve", json={"aprobado": True}, headers={"X-Reviewer-Key": "clave-de-revisor-larga"}
+        )
+        assert ok.status_code == 202
+        assert (await api.esperar(job_id, "DONE", "FAILED"))["status"] == "DONE"
+
+
+async def test_sin_reviewer_api_key_la_aprobacion_queda_abierta_y_health_lo_dice(publicador):
+    async with levantar_api(orquestador(publicador)) as api:
+        assert (await api.client.get("/health")).json()["aprobacion"] == "abierta"

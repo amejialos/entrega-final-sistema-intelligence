@@ -20,6 +20,7 @@ TODAS = (
     "WORKER_EMBEBIDO",
     "REDIS_URL",
     "TRACING_ENABLED",
+    "REVIEWER_API_KEY",
 )
 
 
@@ -68,3 +69,12 @@ def test_las_keys_son_secretas_y_los_tipos_se_validan(entorno):
     entorno.setenv("WORKER_CONCURRENCY", "0")
     with pytest.raises(ValidationError, match="worker_concurrency"):
         Settings(_env_file=None)
+
+
+def test_reviewer_api_key_corta_se_rechaza(entorno):
+    _completo(entorno)
+    entorno.setenv("REVIEWER_API_KEY", "corta")
+    with pytest.raises(ValidationError, match="REVIEWER_API_KEY"):
+        Settings(_env_file=None)
+    entorno.setenv("REVIEWER_API_KEY", "x" * 16)
+    assert Settings(_env_file=None).reviewer_api_key.get_secret_value() == "x" * 16

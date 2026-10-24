@@ -30,6 +30,8 @@ from typing import Any
 
 import httpx
 
+from app.core.config import get_settings
+
 RAIZ = Path(__file__).resolve().parents[1]
 EJEMPLOS = RAIZ / "examples"
 DOCS = RAIZ / "docs"
@@ -333,8 +335,12 @@ async def main() -> None:
     args = parser.parse_args()
     HILO = args.hilo or HILO
 
+    # Si la API exige clave de revisor (REVIEWER_API_KEY), las aprobaciones de las pruebas la mandan.
+    clave = get_settings().reviewer_api_key
+    headers = {"X-Reviewer-Key": clave.get_secret_value()} if clave else {}
+
     resumenes = []
-    async with httpx.AsyncClient(base_url=args.base_url, timeout=60) as client:
+    async with httpx.AsyncClient(base_url=args.base_url, timeout=60, headers=headers) as client:
         (await client.get("/health")).raise_for_status()
         for clave in args.solo or list(ESCENARIOS):
             print(f"\n== Escenario {clave} ==", flush=True)

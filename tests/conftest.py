@@ -132,7 +132,11 @@ class Entorno:
 
 @asynccontextmanager
 async def levantar_api(
-    graph, rag: FakeBuscador | None = None, concurrencia: int = 5, redis: FakeAsyncRedis | None = None
+    graph,
+    rag: FakeBuscador | None = None,
+    concurrencia: int = 5,
+    redis: FakeAsyncRedis | None = None,
+    clave_revisor: str | None = None,
 ) -> AsyncIterator[Entorno]:
     """La API completa con fakes. Pasando el mismo `redis` (y un grafo con el mismo checkpointer)
     se simula un reinicio: la API nueva ve los jobs y las conversaciones de la anterior."""
@@ -159,6 +163,7 @@ async def levantar_api(
                     "synth": "fake-modelo",
                 },
                 info={"indice": "indice-test", "namespace": "ns-test", "trazas": "desactivadas"},
+                clave_revisor=clave_revisor,
             )
         finally:
             await worker.detener()
