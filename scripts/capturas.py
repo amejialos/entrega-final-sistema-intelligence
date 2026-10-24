@@ -12,6 +12,7 @@ la metadata `job_id`, así cada captura muestra la corrida que dice mostrar.
 """
 
 import asyncio
+import html
 import json
 import os
 from pathlib import Path
@@ -104,6 +105,32 @@ def pagina_de_job(job: dict[str, Any]) -> str:
     )
 
 
+def pagina_de_stream(ejemplo: dict[str, Any]) -> str:
+    """Línea de tiempo del stream SSE de la prueba 01 (lo que recibió el cliente, con el segundo de cada evento)."""
+    paso = next(p for p in ejemplo["pasos"] if p["pedido"].endswith("/stream"))
+    filas, tokens = [], []
+    for e in paso["respuesta"]:
+        if e["evento"] == "token":
+            tokens.append(e["texto"])
+            continue
+        if tokens:  # los tokens seguidos se muestran juntos, con cuántos eventos fueron
+            filas.append(("token", f"{len(tokens)} eventos: " + html.escape("".join(tokens))[:600]))
+            tokens = []
+        detalle = e.get("status") or f"{e.get('nodo')} {e.get('detalle') or ''}"
+        filas.append((f"{e['s']:.1f} s · {e['evento']}", html.escape(str(detalle))))
+    if tokens:
+        filas.append(("token", f"{len(tokens)} eventos: " + html.escape("".join(tokens))[:600]))
+    cuerpo = "".join(f"<tr><td><b>{a}</b></td><td>{b}</td></tr>" for a, b in filas)
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><style>body{font-family:system-ui;margin:20px;background:#fff}"
+        "td{padding:4px 10px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top}td:first-child{white-space:nowrap}"
+        "</style></head><body>"
+        f"<h3>{html.escape(paso['pedido'])} (Server-Sent Events, prueba 01 real)</h3>"
+        f"<p>{paso['resumen']['eventos']} eventos · primer token a los {paso['resumen']['primer_token_s']} s · "
+        f"nodos: {' → '.join(paso['resumen']['nodos'])}</p><table>{cuerpo}</table></body></html>"
+    )
+
+
 async def main() -> None:
     from app.core.config import get_settings
 
@@ -150,6 +177,23 @@ async def main() -> None:
         await page.wait_for_timeout(500)
         await page.screenshot(path=str(SALIDA / "10_respuesta_api_fuentes_y_metricas.png"), full_page=True)
         print("  10_respuesta_api_fuentes_y_metricas.png")
+        print("Una traza abierta por cada prueba:")
+        por_prueba = [
+            ("02", "ejecutar", "11_traza_02_seguimiento.png"),
+            ("03b", "ejecutar", "12_traza_03b_turno_despues_del_reinicio.png"),
+            ("04", "reanudar", "13_traza_04_rechazada.png"),
+            ("05", "ejecutar", "14_traza_05_fuera_de_dominio.png"),
+        ]
+        for clave, fase, archivo in por_prueba:
+            job_id = pruebas[clave]["job_id"]
+            traza = traza_de(datos, job_id, fase)
+            raiz_prueba = span_de(datos, traza, f"orquestador job={job_id[:8]} ({fase})")
+            await capturar(page, f"{base}/traces/{traza}?selectedSpanNodeId={raiz_prueba}", archivo, 6000)
+        ejemplo = json.loads((RAIZ / "examples" / "01_rag_y_calculo.json").read_text(encoding="utf-8"))
+        await page.set_content(pagina_de_stream(ejemplo))
+        await page.wait_for_timeout(500)
+        await page.screenshot(path=str(SALIDA / "15_stream_sse_prueba_01.png"), full_page=True)
+        print("  15_stream_sse_prueba_01.png")
         await navegador.close()
 
 

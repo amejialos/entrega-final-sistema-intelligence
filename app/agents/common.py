@@ -49,8 +49,9 @@ def es_error_transitorio(exc: Exception) -> bool:
 
 
 # Reintentos de los nodos que llaman al LLM ante errores transitorios, con esperas largas
-# (20 s, 40 s) para que se libere la ventana por minuto del free tier.
-RETRY_MODELO = RetryPolicy(max_attempts=3, initial_interval=20.0, backoff_factor=2.0, retry_on=es_error_transitorio)
+# (20 s, 40 s, 80 s) para que se libere la ventana por minuto del free tier o pase un pico de
+# demanda (503 "high demand" de Gemini puede durar más de un minuto: con 3 intentos no alcanzaba).
+RETRY_MODELO = RetryPolicy(max_attempts=4, initial_interval=20.0, backoff_factor=2.0, retry_on=es_error_transitorio)
 
 
 def crear_agente_react(model: BaseChatModel, tools: Sequence[BaseTool], prompt: str, name: str) -> CompiledStateGraph:
