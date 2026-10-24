@@ -305,7 +305,7 @@ está escrito en `app/`: lo controla `tests/test_estandares.py` sobre cada archi
 | `EMBEDDING_MODEL` | sí | modelo de embeddings (el de la ingesta) | `gemini-embedding-001` |
 | `EMBEDDING_DIMENSION` | no | dimensión del índice | `1536` |
 | `PINECONE_API_KEY` | sí | key de Pinecone | — |
-| `INDEX_NAME` | sí | índice serverless | `pre-entrega-4` |
+| `INDEX_NAME` | sí | índice serverless (si no existe, se crea al arrancar) | `sistema-intelligence` (o `pre-entrega-4` para reusar el de la PE4) |
 | `PINECONE_NAMESPACE` | sí | namespace del corpus | `caudal-docs` |
 | `PINECONE_CLOUD` · `PINECONE_REGION` | no | dónde crear el índice si no existe | `aws` · `us-east-1` |
 | `RAG_TOP_K` · `RAG_PESO_VECTOR` | no | fragmentos por búsqueda · peso del vector en RRF | `5` · `0.5` |
