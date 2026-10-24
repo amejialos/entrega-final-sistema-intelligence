@@ -27,7 +27,7 @@ class Recursos:
     rag: Buscador
     modelos: dict[str, str] = field(default_factory=dict)
     info: dict[str, Any] = field(default_factory=dict)  # índice, namespace, proyecto de Phoenix...
-    clave_revisor: str | None = None  # REVIEWER_API_KEY; None = aprobación abierta
+    revisores: dict[str, str] = field(default_factory=dict)  # REVIEWER_KEYS: nombre -> clave; vacío = deshabilitada
 
 
 def get_recursos(request: Request) -> Recursos:
@@ -37,24 +37,34 @@ def get_recursos(request: Request) -> Recursos:
 RecursosDep = Annotated[Recursos, Depends(get_recursos)]
 
 
-# `auto_error=False`: sin clave configurada la aprobación queda abierta; el chequeo lo hace `requiere_revisor`.
+# `auto_error=False`: la falta de clave la responde `requiere_revisor` con 401 y un mensaje claro.
 _header_revisor = APIKeyHeader(
-    name="X-Reviewer-Key", auto_error=False, description="Clave de revisor (REVIEWER_API_KEY) para aprobar."
+    name="X-Reviewer-Key", auto_error=False, description="Clave de revisor (una de REVIEWER_KEYS) para aprobar."
 )
 
 
-async def requiere_revisor(recursos: RecursosDep, clave: Annotated[str | None, Security(_header_revisor)] = None) -> None:
-    """Solo quien tiene la clave de revisor aprueba o rechaza una tarea crítica.
+async def requiere_revisor(recursos: RecursosDep, clave: Annotated[str | None, Security(_header_revisor)] = None) -> str:
+    """Devuelve el nombre del revisor dueño de la clave. Seguro por defecto: sin REVIEWER_KEYS nadie aprueba.
 
-    Se compara con `secrets.compare_digest` (tiempo constante): el tiempo de respuesta no revela
-    cuántos caracteres de la clave se acertaron.
+    Se compara contra TODAS las claves con `secrets.compare_digest` (tiempo constante): el tiempo de
+    respuesta no revela cuántos caracteres se acertaron ni qué revisor existe.
     """
-    esperada = recursos.clave_revisor
-    if esperada is None:
-        return
-    if clave is None or not secrets.compare_digest(clave.encode(), esperada.encode()):
+    if not recursos.revisores:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "La aprobación está deshabilitada: no hay revisores configurados (REVIEWER_KEYS).",
+        )
+    encontrado = None
+    for nombre, esperada in recursos.revisores.items():
+        if secrets.compare_digest((clave or "").encode(), esperada.encode()):
+            encontrado = nombre
+    if not clave or encontrado is None:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Falta la clave de revisor o no es válida (header X-Reviewer-Key).",
             headers={"WWW-Authenticate": "APIKey"},
         )
+    return encontrado
+
+
+RevisorDep = Annotated[str, Depends(requiere_revisor)]

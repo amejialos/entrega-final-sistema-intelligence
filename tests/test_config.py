@@ -20,7 +20,7 @@ TODAS = (
     "WORKER_EMBEBIDO",
     "REDIS_URL",
     "TRACING_ENABLED",
-    "REVIEWER_API_KEY",
+    "REVIEWER_KEYS",
 )
 
 
@@ -71,13 +71,15 @@ def test_las_keys_son_secretas_y_los_tipos_se_validan(entorno):
         Settings(_env_file=None)
 
 
-def test_reviewer_api_key_corta_se_rechaza(entorno):
+def test_reviewer_keys_se_leen_como_json_y_validan_nombre_y_largo(entorno):
     _completo(entorno)
-    entorno.setenv("REVIEWER_API_KEY", "corta")
-    with pytest.raises(ValidationError, match="REVIEWER_API_KEY"):
-        Settings(_env_file=None)
-    entorno.setenv("REVIEWER_API_KEY", "x" * 16)
-    assert Settings(_env_file=None).reviewer_api_key.get_secret_value() == "x" * 16
+    assert Settings(_env_file=None).reviewer_keys == {}  # sin claves: aprobación deshabilitada
+    entorno.setenv("REVIEWER_KEYS", '{"ana": "' + "x" * 16 + '"}')
+    assert Settings(_env_file=None).reviewer_keys["ana"].get_secret_value() == "x" * 16
+    for malo in ('{"ana": "corta"}', '{"Ana Pérez": "' + "x" * 16 + '"}'):
+        entorno.setenv("REVIEWER_KEYS", malo)
+        with pytest.raises(ValidationError, match="REVIEWER_KEYS"):
+            Settings(_env_file=None)
 
 
 def test_rag_top_k_y_consulta_rag_comparten_el_mismo_limite(entorno):

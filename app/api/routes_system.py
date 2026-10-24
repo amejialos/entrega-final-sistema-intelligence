@@ -26,5 +26,6 @@ async def health(recursos: RecursosDep) -> HealthOut:
         ),
         trazas=info.get("trazas", "desactivadas"),
         worker_concurrencia=recursos.worker.concurrencia,
-        aprobacion="protegida" if recursos.clave_revisor else "abierta",
+        aprobacion="protegida" if recursos.revisores else "deshabilitada",
+        revisores=len(recursos.revisores),
     )

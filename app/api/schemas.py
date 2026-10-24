@@ -117,6 +117,7 @@ class HealthOut(BaseModel):
     rag: InfoRAG
     trazas: str = Field(description="Proyecto de Phoenix al que van las trazas, o 'desactivadas'.")
     worker_concurrencia: int
-    aprobacion: Literal["protegida", "abierta"] = Field(
-        description="'protegida' si POST /approve exige X-Reviewer-Key (REVIEWER_API_KEY definida)."
+    aprobacion: Literal["protegida", "deshabilitada"] = Field(
+        description="'protegida': POST /approve exige X-Reviewer-Key; 'deshabilitada': no hay REVIEWER_KEYS (503)."
     )
+    revisores: int = Field(ge=0, description="Cantidad de revisores configurados (los nombres y claves no se exponen).")

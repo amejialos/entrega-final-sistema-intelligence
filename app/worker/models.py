@@ -39,14 +39,19 @@ class EventoNodo(BaseModel):
     detalle: str | None = Field(default=None, description="Resumen del paso (p. ej. a quién delegó el supervisor).")
 
 
-class DecisionHumana(BaseModel):
-    """La señal externa que reanuda una tarea pausada (body de `POST /tasks/{id}/approve`)."""
+class DecisionIn(BaseModel):
+    """Body de `POST /tasks/{id}/approve`. Quién decide NO va acá: sale de la clave de revisor."""
 
     model_config = ConfigDict(extra="forbid")
 
     aprobado: StrictBool = Field(description="true reanuda y ejecuta la acción crítica; false la cancela.")
     comentario: str = Field(default="", max_length=1000)
-    revisor: str = Field(default="anónimo", min_length=1, max_length=100)
+
+
+class DecisionHumana(DecisionIn):
+    """La señal externa que reanuda una tarea pausada: la decisión más el revisor autenticado."""
+
+    revisor: str = Field(min_length=1, max_length=100, description="Nombre del dueño de la clave (REVIEWER_KEYS).")
 
 
 class AprobacionRegistrada(BaseModel):

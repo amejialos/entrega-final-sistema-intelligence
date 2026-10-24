@@ -9,10 +9,10 @@ import json
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
+from fastapi import APIRouter, HTTPException, Path, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
-from app.api.deps import RecursosDep, requiere_revisor
+from app.api.deps import RecursosDep, RevisorDep
 from app.api.schemas import (
     PATRON_JOB_ID,
     AprobacionAceptada,
@@ -22,7 +22,7 @@ from app.api.schemas import (
     TareaIn,
 )
 from app.worker.jobs import ConversacionOcupada, JobStore
-from app.worker.models import FINALES, DecisionHumana, Estado, JobRecord, MensajeReanudar
+from app.worker.models import FINALES, DecisionHumana, DecisionIn, Estado, JobRecord, MensajeReanudar
 
 router = APIRouter(prefix="/tasks")
 
@@ -158,15 +158,19 @@ async def listar_tareas(recursos: RecursosDep, limite: int = Query(20, ge=1, le=
     status_code=status.HTTP_202_ACCEPTED,
     response_model=AprobacionAceptada,
     tags=["human-in-the-loop"],
-    dependencies=[Depends(requiere_revisor)],
     responses={
-        401: {"model": ErrorOut, "description": "Falta X-Reviewer-Key o no es válida (si hay REVIEWER_API_KEY)."},
+        401: {"model": ErrorOut, "description": "Falta X-Reviewer-Key o no es una clave de revisor válida."},
+        503: {"model": ErrorOut, "description": "Aprobación deshabilitada: no hay REVIEWER_KEYS configuradas."},
         404: {"model": ErrorOut, "description": "No existe el job."},
         409: {"model": ErrorOut, "description": "El job no está en WAITING_APPROVAL (o ya se aprobó)."},
     },
 )
-async def aprobar(job_id: JobId, decision: DecisionHumana, recursos: RecursosDep) -> AprobacionAceptada:
-    """Registra la decisión humana y encola la reanudación desde el checkpoint (no espera a que termine)."""
+async def aprobar(job_id: JobId, body: DecisionIn, revisor: RevisorDep, recursos: RecursosDep) -> AprobacionAceptada:
+    """Registra la decisión humana y encola la reanudación desde el checkpoint (no espera a que termine).
+
+    Requiere el header `X-Reviewer-Key`: el revisor que queda registrado es el dueño de esa clave.
+    """
+    decision = DecisionHumana(**body.model_dump(), revisor=revisor)
     job = await recursos.store.get(job_id)
     if job is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No existe el job {job_id}.")

@@ -69,8 +69,8 @@ async def recursos_desde_settings(settings: Settings, iniciar_worker: bool = Tru
         if iniciar_worker:
             await worker.iniciar()
             pila.push_async_callback(worker.detener)
-        if settings.reviewer_api_key is None:
-            logger.warning("REVIEWER_API_KEY no está definida: cualquiera puede aprobar las tareas críticas.")
+        if not settings.reviewer_keys:
+            logger.warning("No hay REVIEWER_KEYS: las tareas críticas quedan pausadas y nadie puede aprobarlas (503).")
         logger.info(
             "Sistema listo: modelos %s, índice %s/%s", settings.modelos(), settings.index_name, settings.pinecone_namespace
         )
@@ -86,7 +86,7 @@ async def recursos_desde_settings(settings: Settings, iniciar_worker: bool = Tru
                 "namespace": settings.pinecone_namespace,
                 "trazas": settings.phoenix_project_name if provider else "desactivadas",
             },
-            clave_revisor=settings.reviewer_api_key.get_secret_value() if settings.reviewer_api_key else None,
+            revisores={nombre: clave.get_secret_value() for nombre, clave in settings.reviewer_keys.items()},
         )
 
 

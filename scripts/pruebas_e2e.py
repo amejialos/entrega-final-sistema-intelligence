@@ -193,7 +193,7 @@ async def e03(client: httpx.AsyncClient, reiniciar: bool = True) -> dict[str, An
         await reg.pedir(
             "POST",
             f"/tasks/{job_id}/approve",
-            {"aprobado": True, "comentario": "Revisado: las fuentes están citadas.", "revisor": "ana"},
+            {"aprobado": True, "comentario": "Revisado: las fuentes están citadas."},
         )
     job = await reg.esperar(job_id, "DONE", "FAILED")
     llamadas_despues = (job.get("metricas") or {}).get("llamadas_llm")
@@ -234,7 +234,7 @@ async def e04(client: httpx.AsyncClient) -> dict[str, Any]:
         await reg.pedir(
             "POST",
             f"/tasks/{job_id}/approve",
-            {"aprobado": False, "comentario": "Falta la versión mínima de cada conector.", "revisor": "ana"},
+            {"aprobado": False, "comentario": "Falta la versión mínima de cada conector."},
         )
         await reg.pedir("POST", f"/tasks/{job_id}/approve", {"aprobado": True}, "409: ya no espera aprobación")
     job = await reg.esperar(job_id, "DONE", "FAILED")
@@ -335,9 +335,9 @@ async def main() -> None:
     args = parser.parse_args()
     HILO = args.hilo or HILO
 
-    # Si la API exige clave de revisor (REVIEWER_API_KEY), las aprobaciones de las pruebas la mandan.
-    clave = get_settings().reviewer_api_key
-    headers = {"X-Reviewer-Key": clave.get_secret_value()} if clave else {}
+    # Las aprobaciones las firma el primer revisor de REVIEWER_KEYS (queda registrado en el job).
+    revisores = get_settings().reviewer_keys
+    headers = {"X-Reviewer-Key": next(iter(revisores.values())).get_secret_value()} if revisores else {}
 
     resumenes = []
     async with httpx.AsyncClient(base_url=args.base_url, timeout=60, headers=headers) as client:

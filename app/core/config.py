@@ -15,6 +15,7 @@ Por eso el `docker-compose.yml` puede apuntar `REDIS_URL` a `redis://redis:6379/
 `.env` diga `localhost`.
 """
 
+import re
 from functools import lru_cache
 from typing import Literal
 
@@ -102,8 +103,9 @@ class Settings(BaseSettings):
     phoenix_project_name: str = "entrega-final"
 
     # --- Seguridad: quién puede aprobar las tareas críticas (human-in-the-loop) ---
-    reviewer_api_key: SecretStr | None = Field(
-        default=None, description="Si está definida, POST /tasks/{id}/approve exige el header X-Reviewer-Key."
+    reviewer_keys: dict[str, SecretStr] = Field(
+        default_factory=dict,
+        description='Revisores y sus claves, en JSON: {"ana": "<clave>"}. Vacío = nadie puede aprobar (503).',
     )
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
@@ -122,8 +124,11 @@ class Settings(BaseSettings):
             valor = getattr(self, campo)
             if valor is not None and valor != valor.strip():
                 setattr(self, campo, valor.strip())
-        if self.reviewer_api_key is not None and len(self.reviewer_api_key.get_secret_value()) < 16:
-            raise ValueError("REVIEWER_API_KEY tiene que tener al menos 16 caracteres (o no definirla).")
+        for nombre, clave in self.reviewer_keys.items():
+            if not re.fullmatch(r"[a-z0-9_.-]{1,40}", nombre):
+                raise ValueError(f"REVIEWER_KEYS: el nombre {nombre!r} tiene que ser minúsculas, números, '_', '.' o '-'.")
+            if len(clave.get_secret_value()) < 16:
+                raise ValueError(f"REVIEWER_KEYS: la clave de {nombre!r} tiene que tener al menos 16 caracteres.")
         return self
 
     def modelo_para(self, rol: Rol) -> str:

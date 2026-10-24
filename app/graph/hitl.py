@@ -10,7 +10,7 @@ Flujo en el grafo:
 
     synthesizer -> evaluar_criticidad --(no crítica)--> cerrar_turno -> END
                                      --(crítica)----> aprobacion_humana --interrupt()-- PAUSA
-    POST /tasks/{id}/approve  -> Command(resume={aprobado, comentario, revisor})
+    POST /tasks/{id}/approve  -> Command(resume={aprobado, comentario, revisor})   (revisor = dueño de la clave)
                                      aprobacion_humana --(aprobado)--> publicar_reporte -> cerrar_turno
                                                        --(rechazado)-> cerrar_turno (la respuesta lo explica)
 
@@ -33,10 +33,11 @@ from langgraph.types import Command, interrupt
 from redis.asyncio import Redis
 
 from app.graph.state import OrchestratorState
+from app.worker.models import DecisionHumana
 
 ACCION_CRITICA = "publicar_reporte"
 MAX_BORRADOR = 3000  # lo que ve el revisor del borrador (el resto queda en el checkpoint)
-COMO_RESPONDER = 'POST /tasks/{job_id}/approve con {"aprobado": true|false, "comentario": "...", "revisor": "..."}'
+COMO_RESPONDER = 'POST /tasks/{job_id}/approve con el header X-Reviewer-Key y {"aprobado": true|false, "comentario": "..."}'
 
 # Verbos que piden una acción hacia afuera. Se compara sin tildes y en minúsculas:
 # "publicá" -> "publica". "publicación" NO matchea (no es un pedido de acción).
@@ -86,12 +87,9 @@ async def aprobacion_humana(state: OrchestratorState) -> Command[Literal["public
             "como_responder": COMO_RESPONDER,
         }
     )
-    registro = {
-        "aprobado": bool(decision.get("aprobado")),
-        "comentario": str(decision.get("comentario") or ""),
-        "revisor": str(decision.get("revisor") or "anónimo"),
-        "fecha": datetime.now(UTC).isoformat(timespec="seconds"),
-    }
+    # El valor de reanudación entra al grafo desde afuera: se valida con el mismo modelo que la API.
+    validada = DecisionHumana.model_validate(decision)
+    registro = {**validada.model_dump(), "fecha": datetime.now(UTC).isoformat(timespec="seconds")}
     if registro["aprobado"]:
         return Command(goto=ACCION_CRITICA, update={"aprobacion": registro})
 

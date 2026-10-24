@@ -9,7 +9,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from app.graph.hitl import motivos_criticidad
 from app.worker.jobs import JobStore
 from app.worker.worker import Worker
-from tests.conftest import PRECIOS_TEST, PREGUNTA, RESPUESTA, levantar_api, orquestador
+from tests.conftest import CLAVE_ANA, PRECIOS_TEST, PREGUNTA, RESPUESTA, levantar_api, orquestador
 
 # --- El criterio de tarea crítica ---
 
@@ -68,7 +68,7 @@ async def test_tarea_critica_pausa_hasta_la_aprobacion_y_despues_publica(publica
         assert (await api.client.get(f"/tasks/{job_id}")).json()["status"] == "WAITING_APPROVAL"
         assert await api.store.job_activo(job["thread_id"]) == job_id
 
-        r = await api.client.post(f"/tasks/{job_id}/approve", json={"aprobado": True, "comentario": "ok", "revisor": "ana"})
+        r = await api.client.post(f"/tasks/{job_id}/approve", json={"aprobado": True, "comentario": "ok"})
         assert r.status_code == 202 and r.json()["status"] == "PENDING"
 
         job = await api.esperar(job_id, "DONE", "FAILED")
@@ -129,7 +129,7 @@ async def test_aprobar_un_job_que_no_espera_aprobacion_responde_409(publicador):
 
 @pytest.mark.parametrize(
     "body",
-    [{}, {"aprobado": "tal vez"}, {"aprobado": 1}, {"aprobado": True, "revisor": ""}, {"aprobado": True, "firma": "x"}],
+    [{}, {"aprobado": "tal vez"}, {"aprobado": 1}, {"aprobado": True, "revisor": "ana"}, {"aprobado": True, "firma": "x"}],
 )
 async def test_body_de_aprobacion_invalido_responde_422(publicador, body):
     async with levantar_api(orquestador(publicador)) as api:
@@ -165,27 +165,39 @@ async def test_la_pausa_sobrevive_a_un_reinicio_porque_vive_en_el_checkpoint(pub
         assert job["resultado"]["reporte_publicado"] == f"fake:reporte:{job_id}"
 
 
-async def test_con_reviewer_api_key_solo_aprueba_quien_tiene_la_clave(publicador):
-    """REVIEWER_API_KEY definida: sin header o con una clave equivocada, 401 y el job sigue pausado."""
-    async with levantar_api(orquestador(publicador), clave_revisor="clave-de-revisor-larga") as api:
+async def test_solo_aprueba_quien_tiene_una_clave_de_revisor_y_queda_registrado_quien_fue(publicador):
+    """Sin clave o con una equivocada: 401 y el job sigue pausado. El revisor sale de la clave, no del body."""
+    revisores = {"ana": CLAVE_ANA, "beto": "clave-de-beto-0123456789"}
+    async with levantar_api(orquestador(publicador), revisores=revisores) as api:
         job_id = await api.crear(PREGUNTA, publicar=True)
         await api.esperar(job_id, "WAITING_APPROVAL")
-        assert (await api.client.get("/health")).json()["aprobacion"] == "protegida"
+        salud = (await api.client.get("/health")).json()
+        assert salud["aprobacion"] == "protegida" and salud["revisores"] == 2
 
-        sin_clave = await api.client.post(f"/tasks/{job_id}/approve", json={"aprobado": True})
+        sin_clave = await api.client.post(f"/tasks/{job_id}/approve", json={"aprobado": True}, headers={"X-Reviewer-Key": ""})
         equivocada = await api.client.post(
-            f"/tasks/{job_id}/approve", json={"aprobado": True}, headers={"X-Reviewer-Key": "otra"}
+            f"/tasks/{job_id}/approve", json={"aprobado": True}, headers={"X-Reviewer-Key": "otra-clave-cualquiera"}
         )
         assert sin_clave.status_code == equivocada.status_code == 401
         assert (await api.client.get(f"/tasks/{job_id}")).json()["status"] == "WAITING_APPROVAL"
 
         ok = await api.client.post(
-            f"/tasks/{job_id}/approve", json={"aprobado": True}, headers={"X-Reviewer-Key": "clave-de-revisor-larga"}
+            f"/tasks/{job_id}/approve",
+            json={"aprobado": True, "comentario": "ok"},
+            headers={"X-Reviewer-Key": "clave-de-beto-0123456789"},
         )
         assert ok.status_code == 202
-        assert (await api.esperar(job_id, "DONE", "FAILED"))["status"] == "DONE"
+        job = await api.esperar(job_id, "DONE", "FAILED")
+        assert job["aprobacion"]["revisor"] == "beto"
+        assert job["resultado"]["aprobacion"]["revisor"] == "beto"
 
 
-async def test_sin_reviewer_api_key_la_aprobacion_queda_abierta_y_health_lo_dice(publicador):
-    async with levantar_api(orquestador(publicador)) as api:
-        assert (await api.client.get("/health")).json()["aprobacion"] == "abierta"
+async def test_sin_claves_de_revisor_la_aprobacion_esta_deshabilitada_no_abierta(publicador):
+    """Seguro por defecto: sin REVIEWER_KEYS nadie puede aprobar (503) y /health lo dice."""
+    async with levantar_api(orquestador(publicador), revisores={}) as api:
+        job_id = await api.crear(PREGUNTA, publicar=True)
+        await api.esperar(job_id, "WAITING_APPROVAL")
+        assert (await api.client.get("/health")).json()["aprobacion"] == "deshabilitada"
+        r = await api.client.post(f"/tasks/{job_id}/approve", json={"aprobado": True})
+        assert r.status_code == 503 and "REVIEWER_KEYS" in r.json()["detail"]
+        assert (await api.client.get(f"/tasks/{job_id}")).json()["status"] == "WAITING_APPROVAL"

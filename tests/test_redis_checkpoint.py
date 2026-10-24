@@ -60,7 +60,7 @@ async def test_la_pausa_hitl_se_reanuda_desde_redis_con_otra_instancia(redis_rea
     # "Otro proceso": checkpointer y grafo nuevos (sin LLM), mismo Redis.
     async with redis_checkpointer(REDIS_URL) as saver:
         grafo = orquestador(publicador, checkpointer=saver, sin_llm=True)
-        final = await grafo.ainvoke(Command(resume={"aprobado": True, "comentario": "ok"}), config)
+        final = await grafo.ainvoke(Command(resume={"aprobado": True, "comentario": "ok", "revisor": "ana"}), config)
         assert final["final_answer"] == RESPUESTA
         assert final["reporte_publicado"] == f"fake:reporte:{'a' * 32}"
         await saver.adelete_thread(thread_id)  # no dejar basura de los tests en Redis

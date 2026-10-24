@@ -30,6 +30,7 @@ from tests.fakes import FakeBuscador, FakeSupervisorModel, FakeToolModel, decisi
 
 PREGUNTA = "¿Cuál es el tamano_lote por defecto según la documentación de Caudal?"
 RESPUESTA = "El tamano_lote por defecto es 500 [caudal-instalacion › Configuración]."
+CLAVE_ANA = "clave-de-ana-0123456789"  # clave de revisora de los tests (REVIEWER_KEYS)
 # Precios de prueba para los modelos fake: el costo de las métricas es determinista.
 PRECIOS_TEST: dict[str, PrecioModelo] = {
     **PRECIOS_REFERENCIA,
@@ -136,7 +137,7 @@ async def levantar_api(
     rag: FakeBuscador | None = None,
     concurrencia: int = 5,
     redis: FakeAsyncRedis | None = None,
-    clave_revisor: str | None = None,
+    revisores: dict[str, str] | None = None,
 ) -> AsyncIterator[Entorno]:
     """La API completa con fakes. Pasando el mismo `redis` (y un grafo con el mismo checkpointer)
     se simula un reinicio: la API nueva ve los jobs y las conversaciones de la anterior."""
@@ -145,6 +146,8 @@ async def levantar_api(
     store = JobStore(redis, prefijo="final")
     worker = Worker(redis, store, graph, PRECIOS_TEST, concurrencia=concurrencia, espera_cola_s=0.05)
     rag = rag or FakeBuscador()
+    # Por defecto hay una revisora ("ana") y el cliente manda su clave, como haría un revisor real.
+    revisores = {"ana": CLAVE_ANA} if revisores is None else revisores
 
     @asynccontextmanager
     async def fabrica() -> AsyncIterator[Recursos]:
@@ -163,7 +166,7 @@ async def levantar_api(
                     "synth": "fake-modelo",
                 },
                 info={"indice": "indice-test", "namespace": "ns-test", "trazas": "desactivadas"},
-                clave_revisor=clave_revisor,
+                revisores=revisores,
             )
         finally:
             await worker.detener()
@@ -171,7 +174,8 @@ async def levantar_api(
     app = create_app(fabrica)
     async with app.router.lifespan_context(app):
         transporte = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transporte, base_url="http://test") as client:
+        headers = {"X-Reviewer-Key": CLAVE_ANA} if "ana" in revisores else {}
+        async with httpx.AsyncClient(transport=transporte, base_url="http://test", headers=headers) as client:
             yield Entorno(client, store, worker, redis, app)
     if propio:
         await redis.aclose()
