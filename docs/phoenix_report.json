@@ -1,0 +1,363 @@
+{
+  "fecha": "2026-10-24T11:47:55",
+  "proyecto": "entrega-final",
+  "trazas_en_proyecto": 12,
+  "costo_total_usd": 0.03434445,
+  "tokens_totales": 80203.0,
+  "latencia_ms": {
+    "p50": 41774.122,
+    "p95": 181138.11925000005
+  },
+  "trazas": [
+    {
+      "trace_id": "acc07336cc76cf8e9df91b88caf905d8",
+      "nombre": "orquestador job=09fbd43c (ejecutar)",
+      "job_id": "09fbd43c81cc4fb3856b2a77aec1d334",
+      "thread_id": "e2e-conversacion-10241131",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:31:45.238873+00:00",
+      "estado": "ERROR",
+      "latencia_s": 130.2,
+      "llamadas_llm": 6,
+      "llamadas_llm_error": 3,
+      "tokens_entrada": 1569,
+      "tokens_salida": 193,
+      "costo_usd": 0.000953
+    },
+    {
+      "trace_id": "06040cd516a6ccfbb745a5238bd5c250",
+      "nombre": "orquestador job=3f242877 (ejecutar)",
+      "job_id": "3f242877756c44618cdce8082fe53ebb",
+      "thread_id": "e2e-conversacion-10241131",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:33:55.487731+00:00",
+      "estado": "OK",
+      "latencia_s": 98.83,
+      "llamadas_llm": 7,
+      "llamadas_llm_error": 1,
+      "tokens_entrada": 10243,
+      "tokens_salida": 627,
+      "costo_usd": 0.004223
+    },
+    {
+      "trace_id": "c9f529c911d8b47c8ffedb101aaab002",
+      "nombre": "orquestador job=4b6e1c6c (ejecutar)",
+      "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+      "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:35:35.178780+00:00",
+      "estado": "OK",
+      "latencia_s": 38.27,
+      "llamadas_llm": 5,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 8838,
+      "tokens_salida": 1264,
+      "costo_usd": 0.004745
+    },
+    {
+      "trace_id": "07b02785dbbdd4da100d7b073a4648dc",
+      "nombre": "orquestador job=4b6e1c6c (reanudar)",
+      "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+      "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+      "fase": "reanudar",
+      "inicio": "2026-10-24T14:36:19.793036+00:00",
+      "estado": "OK",
+      "latencia_s": 0.02,
+      "llamadas_llm": 0,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 0,
+      "tokens_salida": 0,
+      "costo_usd": 0.0
+    },
+    {
+      "trace_id": "e2e73d998d601a0b0db2ea923c67faee",
+      "nombre": "orquestador job=33de2bfb (ejecutar)",
+      "job_id": "33de2bfb0e044efd8f1dfeb9c7718774",
+      "thread_id": "e2e-conversacion-10241131",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:36:22.773217+00:00",
+      "estado": "OK",
+      "latencia_s": 160.75,
+      "llamadas_llm": 10,
+      "llamadas_llm_error": 2,
+      "tokens_entrada": 11159,
+      "tokens_salida": 988,
+      "costo_usd": 0.005183
+    },
+    {
+      "trace_id": "271c8b82395f9ef06ca8c069e47ffe2a",
+      "nombre": "orquestador job=9ad45dca (ejecutar)",
+      "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+      "thread_id": "73c720accc00417b90763064c498b7fc",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:39:05.788383+00:00",
+      "estado": "OK",
+      "latencia_s": 60.93,
+      "llamadas_llm": 6,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 13806,
+      "tokens_salida": 1325,
+      "costo_usd": 0.00636
+    },
+    {
+      "trace_id": "c0d1970e53649aeed2df264901b26700",
+      "nombre": "orquestador job=9ad45dca (reanudar)",
+      "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+      "thread_id": "73c720accc00417b90763064c498b7fc",
+      "fase": "reanudar",
+      "inicio": "2026-10-24T14:40:09.079428+00:00",
+      "estado": "OK",
+      "latencia_s": 0.03,
+      "llamadas_llm": 0,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 0,
+      "tokens_salida": 0,
+      "costo_usd": 0.0
+    },
+    {
+      "trace_id": "cd583bb41d3f2403946d165477198821",
+      "nombre": "orquestador job=8ebaf5e6 (ejecutar)",
+      "job_id": "8ebaf5e6fd664468abb7cd0e9bb1a4e9",
+      "thread_id": "4c905971bde34414b805800244ac34e8",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:40:12.140736+00:00",
+      "estado": "OK",
+      "latencia_s": 6.44,
+      "llamadas_llm": 1,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 703,
+      "tokens_salida": 115,
+      "costo_usd": 0.000498
+    },
+    {
+      "trace_id": "764cd9d36faf92dbed8b5cfa73e416b4",
+      "nombre": "recuperacion_hibrida",
+      "job_id": null,
+      "thread_id": null,
+      "fase": null,
+      "inicio": "2026-10-24T14:40:21.224980+00:00",
+      "estado": "OK",
+      "latencia_s": 2.15,
+      "llamadas_llm": 0,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 0,
+      "tokens_salida": 0,
+      "costo_usd": 0.0
+    },
+    {
+      "trace_id": "15e496de7b8095e1eafd6fe42e4233c3",
+      "nombre": "orquestador job=0e35dc6f (ejecutar)",
+      "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
+      "thread_id": "e2e-conversacion-final-10241141",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:41:13.373250+00:00",
+      "estado": "OK",
+      "latencia_s": 206.06,
+      "llamadas_llm": 12,
+      "llamadas_llm_error": 2,
+      "tokens_entrada": 15282,
+      "tokens_salida": 1879,
+      "costo_usd": 0.007542
+    },
+    {
+      "trace_id": "6728e1bdfc21e6d480f49662d2f72e71",
+      "nombre": "orquestador job=d1437cce (ejecutar)",
+      "job_id": "d1437cceb8874e10ad126dc79f8280d3",
+      "thread_id": "e2e-conversacion-final-10241141",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:44:39.639569+00:00",
+      "estado": "OK",
+      "latencia_s": 45.28,
+      "llamadas_llm": 5,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 7299,
+      "tokens_salida": 648,
+      "costo_usd": 0.003193
+    },
+    {
+      "trace_id": "58b3367b7ebd575fb519e81236a366ac",
+      "nombre": "orquestador job=36d8def1 (ejecutar)",
+      "job_id": "36d8def1425b4f77a84683f79c9e7500",
+      "thread_id": "e2e-conversacion-final-10241141",
+      "fase": "ejecutar",
+      "inicio": "2026-10-24T14:45:52.716477+00:00",
+      "estado": "OK",
+      "latencia_s": 37.56,
+      "llamadas_llm": 2,
+      "llamadas_llm_error": 0,
+      "tokens_entrada": 3944,
+      "tokens_salida": 321,
+      "costo_usd": 0.001647
+    }
+  ],
+  "por_job": {
+    "09fbd43c81cc4fb3856b2a77aec1d334": {
+      "costo_usd": 0.000953,
+      "tokens_entrada": 1569.0,
+      "tokens_salida": 193.0,
+      "llamadas_llm": 6.0,
+      "llamadas_llm_error": 3.0
+    },
+    "3f242877756c44618cdce8082fe53ebb": {
+      "costo_usd": 0.004223,
+      "tokens_entrada": 10243.0,
+      "tokens_salida": 627.0,
+      "llamadas_llm": 7.0,
+      "llamadas_llm_error": 1.0
+    },
+    "4b6e1c6c30c7450fa436100d1938614f": {
+      "costo_usd": 0.004745,
+      "tokens_entrada": 8838.0,
+      "tokens_salida": 1264.0,
+      "llamadas_llm": 5.0,
+      "llamadas_llm_error": 0.0
+    },
+    "33de2bfb0e044efd8f1dfeb9c7718774": {
+      "costo_usd": 0.005183,
+      "tokens_entrada": 11159.0,
+      "tokens_salida": 988.0,
+      "llamadas_llm": 10.0,
+      "llamadas_llm_error": 2.0
+    },
+    "9ad45dca5bd1450092660b1ca195c99b": {
+      "costo_usd": 0.00636,
+      "tokens_entrada": 13806.0,
+      "tokens_salida": 1325.0,
+      "llamadas_llm": 6.0,
+      "llamadas_llm_error": 0.0
+    },
+    "8ebaf5e6fd664468abb7cd0e9bb1a4e9": {
+      "costo_usd": 0.000498,
+      "tokens_entrada": 703.0,
+      "tokens_salida": 115.0,
+      "llamadas_llm": 1.0,
+      "llamadas_llm_error": 0.0
+    },
+    "0e35dc6fb25b47c2ae39aad9639015d7": {
+      "costo_usd": 0.007542,
+      "tokens_entrada": 15282.0,
+      "tokens_salida": 1879.0,
+      "llamadas_llm": 12.0,
+      "llamadas_llm_error": 2.0
+    },
+    "d1437cceb8874e10ad126dc79f8280d3": {
+      "costo_usd": 0.003193,
+      "tokens_entrada": 7299.0,
+      "tokens_salida": 648.0,
+      "llamadas_llm": 5.0,
+      "llamadas_llm_error": 0.0
+    },
+    "36d8def1425b4f77a84683f79c9e7500": {
+      "costo_usd": 0.001647,
+      "tokens_entrada": 3944.0,
+      "tokens_salida": 321.0,
+      "llamadas_llm": 2.0,
+      "llamadas_llm_error": 0.0
+    }
+  },
+  "por_nodo": {
+    "supervisor": {
+      "llamadas_llm": 19.0,
+      "tokens_entrada": 15254.0,
+      "tokens_salida": 2400.0,
+      "costo_usd": 0.010576
+    },
+    "researcher": {
+      "llamadas_llm": 23.0,
+      "tokens_entrada": 24120.0,
+      "tokens_salida": 725.0,
+      "costo_usd": 0.009048
+    },
+    "synthesizer": {
+      "llamadas_llm": 7.0,
+      "tokens_entrada": 28866.0,
+      "tokens_salida": 3765.0,
+      "costo_usd": 0.012864
+    },
+    "analyst": {
+      "llamadas_llm": 5.0,
+      "tokens_entrada": 4603.0,
+      "tokens_salida": 470.0,
+      "costo_usd": 0.001856
+    }
+  },
+  "rag": {
+    "spans_retriever": 13,
+    "latencia_media_ms": 2022.7,
+    "latencia_max_ms": 2397.7
+  },
+  "control_cruzado": [
+    {
+      "escenario": "01 RAG + cálculo",
+      "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
+      "api_costo_usd": 0.00754165,
+      "phoenix_costo_usd": 0.007542,
+      "api_tokens": "15282/1879",
+      "phoenix_tokens": "15282/1879",
+      "api_llamadas": 10,
+      "api_llamadas_fallidas": null,
+      "phoenix_llamadas": 12,
+      "phoenix_llamadas_error": 2
+    },
+    {
+      "escenario": "02 seguimiento (mismo thread_id)",
+      "job_id": "d1437cceb8874e10ad126dc79f8280d3",
+      "api_costo_usd": 0.0031928,
+      "phoenix_costo_usd": 0.003193,
+      "api_tokens": "7299/648",
+      "phoenix_tokens": "7299/648",
+      "api_llamadas": 5,
+      "api_llamadas_fallidas": null,
+      "phoenix_llamadas": 5,
+      "phoenix_llamadas_error": 0
+    },
+    {
+      "escenario": "03 HITL aprobada + reinicio",
+      "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+      "api_costo_usd": 0.0047451,
+      "phoenix_costo_usd": 0.004745,
+      "api_tokens": "8838/1264",
+      "phoenix_tokens": "8838/1264",
+      "api_llamadas": 5,
+      "api_llamadas_fallidas": null,
+      "phoenix_llamadas": 5,
+      "phoenix_llamadas_error": 0
+    },
+    {
+      "escenario": "03b seguimiento post-reinicio",
+      "job_id": "36d8def1425b4f77a84683f79c9e7500",
+      "api_costo_usd": 0.00164695,
+      "phoenix_costo_usd": 0.001647,
+      "api_tokens": "3944/321",
+      "phoenix_tokens": "3944/321",
+      "api_llamadas": 2,
+      "api_llamadas_fallidas": null,
+      "phoenix_llamadas": 2,
+      "phoenix_llamadas_error": 0
+    },
+    {
+      "escenario": "04 HITL rechazada",
+      "job_id": "9ad45dca5bd1450092660b1ca195c99b",
+      "api_costo_usd": 0.0063605,
+      "phoenix_costo_usd": 0.00636,
+      "api_tokens": "13806/1325",
+      "phoenix_tokens": "13806/1325",
+      "api_llamadas": 6,
+      "api_llamadas_fallidas": null,
+      "phoenix_llamadas": 6,
+      "phoenix_llamadas_error": 0
+    },
+    {
+      "escenario": "05 fuera de dominio",
+      "job_id": "8ebaf5e6fd664468abb7cd0e9bb1a4e9",
+      "api_costo_usd": 0.0004984,
+      "phoenix_costo_usd": 0.000498,
+      "api_tokens": "703/115",
+      "phoenix_tokens": "703/115",
+      "api_llamadas": 1,
+      "api_llamadas_fallidas": null,
+      "phoenix_llamadas": 1,
+      "phoenix_llamadas_error": 0
+    }
+  ]
+}

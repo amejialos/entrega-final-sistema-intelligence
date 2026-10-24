@@ -1,0 +1,74 @@
+# Despliegue local con UNA instrucción:
+#
+#   docker compose up --build          # Redis + Phoenix + API (espera a que cada uno esté sano)
+#
+# - API:     http://localhost:8000/docs  (Swagger)
+# - Phoenix: http://localhost:6006       (trazas, proyecto PHOENIX_PROJECT_NAME)
+# - Redis:   localhost:6379              (jobs, cola, checkpoints de LangGraph)
+#
+# Los datos quedan en volúmenes con nombre: sobreviven a `docker compose down` y a
+# `docker compose restart` (solo se borran con `down -v`).
+name: sistema-intelligence
+
+services:
+  redis:
+    # redis:8 trae los módulos JSON y Search que necesita langgraph-checkpoint-redis.
+    image: redis:8.10.2
+    ports:
+      - "6379:6379"
+    # AOF: cada escritura se persiste en disco; los checkpoints sobreviven a un reinicio.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  phoenix:
+    image: arizephoenix/phoenix:version-20.21.1
+    ports:
+      - "6006:6006"   # UI + colector OTLP por HTTP (/v1/traces)
+      - "4317:4317"   # colector OTLP por gRPC
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+    volumes:
+      - phoenix-data:/mnt/data
+    healthcheck:
+      # La imagen no trae shell ni curl, pero sí Python.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6006/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  api:
+    build: .
+    image: sistema-intelligence-api
+    ports:
+      - "8000:8000"
+    # Las keys, el índice y los modelos salen del .env (ver .env.example).
+    env_file:
+      - .env
+    # Dentro de la red del compose, Redis y Phoenix se llaman por el nombre del servicio
+    # (las variables de entorno le ganan al .env en pydantic-settings).
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PHOENIX_COLLECTOR_ENDPOINT: http://phoenix:6006/v1/traces
+    depends_on:
+      redis:
+        condition: service_healthy
+      phoenix:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 180s  # en una cuenta nueva de Pinecone, el arranque crea el índice e ingesta el corpus
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  phoenix-data:

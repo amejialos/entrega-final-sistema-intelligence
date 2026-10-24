@@ -1,0 +1,32 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	supervisor(supervisor)
+	researcher(researcher)
+	analyst(analyst)
+	synthesizer(synthesizer)
+	evaluar_criticidad(evaluar_criticidad)
+	aprobacion_humana(aprobacion_humana)
+	publicar_reporte(publicar_reporte)
+	cerrar_turno(cerrar_turno)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> supervisor;
+	analyst --> supervisor;
+	aprobacion_humana -.-> cerrar_turno;
+	aprobacion_humana -.-> publicar_reporte;
+	evaluar_criticidad -.-> aprobacion_humana;
+	evaluar_criticidad -.-> cerrar_turno;
+	publicar_reporte --> cerrar_turno;
+	researcher --> supervisor;
+	supervisor -.-> analyst;
+	supervisor -.-> researcher;
+	supervisor -.-> synthesizer;
+	synthesizer --> evaluar_criticidad;
+	cerrar_turno --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

@@ -1,0 +1,403 @@
+{
+  "escenario": "01_rag_y_calculo",
+  "descripcion": "Pregunta que necesita la documentación (RAG) y un cálculo; abre la conversación del 02.",
+  "fecha": "2026-10-24T11:41:13",
+  "pasos": [
+    {
+      "nota": "202 al instante",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+        "thread_id": "e2e-conversacion-final-10241141"
+      },
+      "status": 202,
+      "ms": 5.0,
+      "respuesta": {
+        "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
+        "thread_id": "e2e-conversacion-final-10241141",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/0e35dc6fb25b47c2ae39aad9639015d7",
+          "conversacion": "/conversations/e2e-conversacion-final-10241141",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "409: conversación ocupada",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "¿Y con 8 workers cuánto tarda?",
+        "thread_id": "e2e-conversacion-final-10241141"
+      },
+      "status": 409,
+      "ms": 21.5,
+      "respuesta": {
+        "detail": "La conversación e2e-conversacion-final-10241141 tiene un job en curso (0e35dc6fb25b47c2ae39aad9639015d7). Esperá a que termine (o aprobalo) y volvé a enviar."
+      }
+    },
+    {
+      "nota": "stream SSE hasta el fin",
+      "pedido": "GET /tasks/0e35dc6fb25b47c2ae39aad9639015d7/stream",
+      "status": 200,
+      "resumen": {
+        "eventos": 15,
+        "eventos_token": 3,
+        "primer_token_s": 205.7,
+        "nodos": [
+          "supervisor",
+          "researcher",
+          "supervisor",
+          "analyst",
+          "supervisor",
+          "synthesizer",
+          "evaluar_criticidad",
+          "cerrar_turno"
+        ],
+        "texto_transmitido": "Para la ingesta masiva en Caudal, se recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote].\n\nBasado en los cálculos del analista, los resultados para 2.000.000 de eventos son los siguientes:\n\n*   **Cantidad de lotes:** 400 lotes.\n    *   Cálculo: 2.000.000 eventos / 5.000 eventos por lote = 400 lotes.\n*   **Tiempo de procesamiento:** 20 segundos.\n    *   Cálculo: 400 lotes / (5 lotes por segundo por worker * 4 workers) = 400 / 20 = 20 segundos."
+      },
+      "respuesta": [
+        {
+          "s": 0.0,
+          "evento": "estado",
+          "status": "PENDING",
+          "t": "2026-10-24T14:41:13.367+00:00"
+        },
+        {
+          "s": 0.0,
+          "evento": "estado",
+          "status": "RUNNING",
+          "t": "2026-10-24T14:41:13.369+00:00"
+        },
+        {
+          "s": 24.12,
+          "evento": "nodo",
+          "nodo": "supervisor",
+          "t": "2026-10-24T14:41:37.413+00:00",
+          "detalle": "-> researcher: Se necesita buscar en la documentación oficial el tamaño de lote recomendado para ingesta masiva en Caudal."
+        },
+        {
+          "s": 154.14,
+          "evento": "nodo",
+          "nodo": "researcher",
+          "t": "2026-10-24T14:43:47.492+00:00",
+          "detalle": "ok, 5 fuentes"
+        },
+        {
+          "s": 158.74,
+          "evento": "nodo",
+          "nodo": "supervisor",
+          "t": "2026-10-24T14:43:51.995+00:00",
+          "detalle": "-> analyst: El researcher ya encontro el tamaño de lote recomendado (5000 eventos). Ahora falta que el analyst calcule la cantidad de lotes para 2.000.000 de eventos y el t"
+        },
+        {
+          "s": 192.07,
+          "evento": "nodo",
+          "nodo": "analyst",
+          "t": "2026-10-24T14:44:25.329+00:00",
+          "detalle": "ok, 1 fuentes"
+        },
+        {
+          "s": 196.95,
+          "evento": "nodo",
+          "nodo": "supervisor",
+          "t": "2026-10-24T14:44:30.327+00:00",
+          "detalle": "-> synthesizer: Todos los criterios de la rúbrica se han cumplido correctamente: el investigador obtuvo el tamaño de lote con su fuente, el analista calculó los lotes y el tiem"
+        },
+        {
+          "s": 205.7,
+          "evento": "token",
+          "texto": "Para la ingesta masiva en Caudal, se recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote].\n\nBasado en los cálculos del"
+        },
+        {
+          "s": 205.95,
+          "evento": "token",
+          "texto": " analista, los resultados para 2.000.000 de eventos son los siguientes:\n\n*   **Cantidad de lotes:** 400 lotes.\n    *   Cálculo: 2.000.000 eventos / 5.000 eventos por lote = 400 lotes.\n*   **Tiempo de procesamiento:** 20 segundos.\n    *   Cálculo: 400 lotes / (5 lotes por segundo por worker * 4 workers) = 400 / 20 = 2"
+        },
+        {
+          "s": 206.21,
+          "evento": "token",
+          "texto": "0 segundos."
+        },
+        {
+          "s": 206.21,
+          "evento": "nodo",
+          "nodo": "synthesizer",
+          "t": "2026-10-24T14:44:39.415+00:00"
+        },
+        {
+          "s": 206.21,
+          "evento": "nodo",
+          "nodo": "evaluar_criticidad",
+          "t": "2026-10-24T14:44:39.425+00:00"
+        },
+        {
+          "s": 206.21,
+          "evento": "nodo",
+          "nodo": "cerrar_turno",
+          "t": "2026-10-24T14:44:39.429+00:00"
+        },
+        {
+          "s": 206.21,
+          "evento": "estado",
+          "status": "DONE",
+          "t": "2026-10-24T14:44:39.442+00:00"
+        },
+        {
+          "s": 206.21,
+          "evento": "fin",
+          "status": "DONE"
+        }
+      ]
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/0e35dc6fb25b47c2ae39aad9639015d7",
+      "status": 200,
+      "respuesta": {
+        "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
+        "thread_id": "e2e-conversacion-final-10241141",
+        "status": "DONE",
+        "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+        "publicar": false,
+        "created_at": "2026-10-24T14:41:13.367+00:00",
+        "updated_at": "2026-10-24T14:44:39.442+00:00",
+        "started_at": "2026-10-24T14:41:13.369+00:00",
+        "finished_at": "2026-10-24T14:44:39.442+00:00",
+        "resultado": {
+          "respuesta": "Para la ingesta masiva en Caudal, se recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote].\n\nBasado en los cálculos del analista, los resultados para 2.000.000 de eventos son los siguientes:\n\n*   **Cantidad de lotes:** 400 lotes.\n    *   Cálculo: 2.000.000 eventos / 5.000 eventos por lote = 400 lotes.\n*   **Tiempo de procesamiento:** 20 segundos.\n    *   Cálculo: 400 lotes / (5 lotes por segundo por worker * 4 workers) = 400 / 20 = 20 segundos.",
+          "fuentes": [
+            {
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Backpressure y tamaño de lote",
+              "chunk_id": "caudal-rendimiento-p2-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.016393,
+              "score_vector": 0.696471,
+              "score_bm25": 10.423878,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-conectores",
+              "seccion": "ConectorPostgres: fuente y sumidero de base de datos",
+              "chunk_id": "caudal-conectores-p2-c0",
+              "titulo": "Conectores de fuentes y sumideros",
+              "score": 0.015505,
+              "score_vector": 0.553691,
+              "score_bm25": 1.075539,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-changelog",
+              "seccion": "Caudal 2.5",
+              "chunk_id": "caudal-changelog-p2-c0",
+              "titulo": "Historial de versiones de Caudal",
+              "score": 0.015289,
+              "score_vector": 0.527568,
+              "score_bm25": 1.319066,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Paralelismo y workers",
+              "chunk_id": "caudal-rendimiento-p1-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.008065,
+              "score_vector": 0.57922,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            },
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Códigos de error CAU",
+              "chunk_id": "caudal-errores-p1-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.008065,
+              "score_vector": null,
+              "score_bm25": 1.894402,
+              "recuperado_por": [
+                "bm25"
+              ]
+            }
+          ],
+          "contribuciones": [
+            {
+              "agente": "researcher",
+              "paso": 1,
+              "estado": "ok",
+              "tarea": "Busca en la documentación oficial de Caudal cuál es el tamaño de lote recomendado para la ingesta masiva e indica la fuente.",
+              "resultado": "- Tamaño de lote recomendado para cargas batch o de ingesta masiva: **5000 eventos o más**.\n  - Fuente: [caudal-rendimiento › Backpressure y tamaño de lote]",
+              "fuentes": [
+                "caudal-rendimiento › Backpressure y tamaño de lote",
+                "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+                "caudal-changelog › Caudal 2.5",
+                "caudal-rendimiento › Paralelismo y workers",
+                "caudal-errores › Códigos de error CAU"
+              ],
+              "herramientas": [
+                "buscar_documentacion"
+              ]
+            },
+            {
+              "agente": "analyst",
+              "paso": 2,
+              "estado": "ok",
+              "tarea": "Calcula la cantidad de lotes necesarios para 2.000.000 de eventos usando un tamaño de lote de 5000 eventos. Luego, calcula cuánto tarda en procesarlos un sistema con 4 workers, sabiendo que cada worker procesa 5 lotes por segundo.",
+              "resultado": "Para procesar 2.000.000 de eventos con un tamaño de lote de 5.000:\n\n*   **Cantidad de lotes:** 400 lotes.\n*   **Tiempo estimado:** 20 segundos (0,33 minutos).\n\n**Supuestos y cálculos:**\n*   Cálculo realizado mediante la herramienta `estimar_tiempo_procesamiento` con los parámetros: 2.000.000 de registros, tamaño de lote de 5.000, 4 workers y una tasa de 5 lotes por segundo por cada worker.\n*   Fórmula utilizada: `lotes = registros / tamano_lote` y `segundos = lotes / (lotes_por_segundo_por_worker * workers)`.",
+              "fuentes": [
+                "estimar_tiempo_procesamiento"
+              ],
+              "herramientas": [
+                "estimar_tiempo_procesamiento"
+              ]
+            }
+          ],
+          "ruta_supervisor": [
+            "researcher",
+            "analyst",
+            "FINISH"
+          ],
+          "turno": 1,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [],
+          "aprobacion": null,
+          "reporte_publicado": null
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": 206.075,
+          "latencia_ejecucion_s": 206.067,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 10,
+          "tokens_entrada": 15282,
+          "tokens_salida": 1879,
+          "tokens_totales": 17161,
+          "costo_estimado_usd": 0.00754165,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 3,
+              "tokens_entrada": 2825,
+              "tokens_salida": 461,
+              "costo_estimado_usd": 0.002
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 4,
+              "tokens_entrada": 3568,
+              "tokens_salida": 122,
+              "costo_estimado_usd": 0.0013754
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 3,
+              "tokens_entrada": 8889,
+              "tokens_salida": 1296,
+              "costo_estimado_usd": 0.00416625
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-24T14:41:13.367+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-24T14:41:13.369+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-24T14:44:39.442+00:00",
+            "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:41:37.413+00:00",
+            "detalle": "-> researcher: Se necesita buscar en la documentación oficial el tamaño de lote recomendado para ingesta masiva en Caudal."
+          },
+          {
+            "nodo": "researcher",
+            "t": "2026-10-24T14:43:47.492+00:00",
+            "detalle": "ok, 5 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:43:51.995+00:00",
+            "detalle": "-> analyst: El researcher ya encontro el tamaño de lote recomendado (5000 eventos). Ahora falta que el analyst calcule la cantidad de lotes para 2.000.000 de eventos y el t"
+          },
+          {
+            "nodo": "analyst",
+            "t": "2026-10-24T14:44:25.329+00:00",
+            "detalle": "ok, 1 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:44:30.327+00:00",
+            "detalle": "-> synthesizer: Todos los criterios de la rúbrica se han cumplido correctamente: el investigador obtuvo el tamaño de lote con su fuente, el analista calculó los lotes y el tiem"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:44:39.415+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:44:39.425+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "cerrar_turno",
+            "t": "2026-10-24T14:44:39.429+00:00",
+            "detalle": null
+          }
+        ]
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "01 RAG + cálculo",
+    "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
+    "thread_id": "e2e-conversacion-final-10241141",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "analyst",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 5,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 206.075,
+    "latencia_ejecucion_s": 206.067,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 10,
+    "tokens_entrada": 15282,
+    "tokens_salida": 1879,
+    "costo_estimado_usd": 0.00754165,
+    "error": null,
+    "stream_eventos_token": 3,
+    "stream_primer_token_s": 205.7,
+    "stream_texto_igual_a_respuesta": true
+  }
+}

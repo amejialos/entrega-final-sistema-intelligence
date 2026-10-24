@@ -1,0 +1,202 @@
+{
+  "escenario": "03b_seguimiento_despues_del_reinicio",
+  "descripcion": "Tercer turno de la conversación 01/02 después de reiniciar API y Redis.",
+  "fecha": "2026-10-24T11:45:52",
+  "pasos": [
+    {
+      "nota": "",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "Resumime en dos líneas el tamaño de lote recomendado y los dos tiempos que calculamos (con 4 y con 8 workers).",
+        "thread_id": "e2e-conversacion-final-10241141"
+      },
+      "status": 202,
+      "ms": 3.3,
+      "respuesta": {
+        "job_id": "36d8def1425b4f77a84683f79c9e7500",
+        "thread_id": "e2e-conversacion-final-10241141",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/36d8def1425b4f77a84683f79c9e7500",
+          "conversacion": "/conversations/e2e-conversacion-final-10241141",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/36d8def1425b4f77a84683f79c9e7500",
+      "status": 200,
+      "respuesta": {
+        "job_id": "36d8def1425b4f77a84683f79c9e7500",
+        "thread_id": "e2e-conversacion-final-10241141",
+        "status": "DONE",
+        "pregunta": "Resumime en dos líneas el tamaño de lote recomendado y los dos tiempos que calculamos (con 4 y con 8 workers).",
+        "publicar": false,
+        "created_at": "2026-10-24T14:45:52.711+00:00",
+        "updated_at": "2026-10-24T14:46:30.278+00:00",
+        "started_at": "2026-10-24T14:45:52.712+00:00",
+        "finished_at": "2026-10-24T14:46:30.278+00:00",
+        "resultado": {
+          "respuesta": "El tamaño de lote recomendado para ingesta masiva es de 5.000 eventos o más [caudal-rendimiento › Backpressure y tamaño de lote]. Con 4 workers el procesamiento tarda 20 segundos, mientras que con 8 workers el tiempo se reduce a 10 segundos.",
+          "fuentes": [],
+          "contribuciones": [],
+          "ruta_supervisor": [
+            "FINISH"
+          ],
+          "turno": 3,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [],
+          "aprobacion": null,
+          "reporte_publicado": null
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": 37.567,
+          "latencia_ejecucion_s": 37.56,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 2,
+          "tokens_entrada": 3944,
+          "tokens_salida": 321,
+          "tokens_totales": 4265,
+          "costo_estimado_usd": 0.00164695,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 1,
+              "tokens_entrada": 1049,
+              "tokens_salida": 127,
+              "costo_estimado_usd": 0.0006322
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 2895,
+              "tokens_salida": 194,
+              "costo_estimado_usd": 0.00101475
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-24T14:45:52.711+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-24T14:45:52.712+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-24T14:46:30.278+00:00",
+            "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:46:13.044+00:00",
+            "detalle": "-> synthesizer: Todos los datos y cálculos necesarios (tamaño de lote, tiempo con 4 workers y tiempo con 8 workers) ya fueron proporcionados en los turnos previos y solo se req"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:46:30.261+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:46:30.267+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "cerrar_turno",
+            "t": "2026-10-24T14:46:30.272+00:00",
+            "detalle": null
+          }
+        ]
+      }
+    },
+    {
+      "nota": "los 3 turnos, del checkpoint en Redis",
+      "pedido": "GET /conversations/e2e-conversacion-final-10241141",
+      "body": null,
+      "status": 200,
+      "ms": 83.1,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-final-10241141",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "0e35dc6fb25b47c2ae39aad9639015d7",
+            "pregunta": "Según la documentación de Caudal, ¿qué tamaño de lote se recomienda para ingesta masiva? ¿Cuántos lotes son 2.000.000 de eventos con ese tamaño y cuánto tarda procesarlos con 4 workers que procesan 5 lotes por segundo cada uno?",
+            "respuesta": "Para la ingesta masiva en Caudal, se recomienda un tamaño de lote de **5.000 eventos o más** [caudal-rendimiento › Backpressure y tamaño de lote].\n\nBasado en los cálculos del analista, los resultados para 2.000.000 de eventos son los siguientes:\n\n*   **Cantidad de lotes:** 400 lotes.\n    *   Cálculo: 2.000.000 eventos / 5.000 eventos por lote = 400 lotes.\n*   **Tiempo de procesamiento:** 20 segundos.\n    *   Cálculo: 400 lotes / (5 lotes por segundo por worker * 4 workers) = 400 / 20 = 20 segundos.",
+            "fuentes": [
+              "caudal-changelog › Caudal 2.5",
+              "caudal-conectores › ConectorPostgres: fuente y sumidero de base de datos",
+              "caudal-errores › Códigos de error CAU",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-24T14:44:39+00:00"
+          },
+          {
+            "numero": 2,
+            "job_id": "d1437cceb8874e10ad126dc79f8280d3",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Si utilizas 8 workers, el tiempo de procesamiento sería de **10 segundos**.\n\nEste resultado se basa en el cálculo del analista:\n*   **Cálculo:** 400 lotes / (5 lotes por segundo por worker * 8 workers) = 10 segundos.",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-24T14:45:24+00:00"
+          },
+          {
+            "numero": 3,
+            "job_id": "36d8def1425b4f77a84683f79c9e7500",
+            "pregunta": "Resumime en dos líneas el tamaño de lote recomendado y los dos tiempos que calculamos (con 4 y con 8 workers).",
+            "respuesta": "El tamaño de lote recomendado para ingesta masiva es de 5.000 eventos o más [caudal-rendimiento › Backpressure y tamaño de lote]. Con 4 workers el procesamiento tarda 20 segundos, mientras que con 8 workers el tiempo se reduce a 10 segundos.",
+            "fuentes": [],
+            "reporte_publicado": null,
+            "fecha": "2026-10-24T14:46:30+00:00"
+          }
+        ],
+        "jobs": [
+          "0e35dc6fb25b47c2ae39aad9639015d7",
+          "d1437cceb8874e10ad126dc79f8280d3",
+          "36d8def1425b4f77a84683f79c9e7500"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 15,
+        "checkpoints": 47
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "03b seguimiento post-reinicio",
+    "job_id": "36d8def1425b4f77a84683f79c9e7500",
+    "thread_id": "e2e-conversacion-final-10241141",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "FINISH"
+    ],
+    "turno": 3,
+    "fuentes": 0,
+    "fuera_de_dominio": false,
+    "reporte_publicado": null,
+    "latencia_total_s": 37.567,
+    "latencia_ejecucion_s": 37.56,
+    "espera_aprobacion_s": null,
+    "llamadas_llm": 2,
+    "tokens_entrada": 3944,
+    "tokens_salida": 321,
+    "costo_estimado_usd": 0.00164695,
+    "error": null
+  }
+}

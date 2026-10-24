@@ -1,0 +1,589 @@
+{
+  "escenario": "03_hitl_aprobada_con_reinicio",
+  "descripcion": "Tarea crítica (pide publicar): pausa en WAITING_APPROVAL, se reinician la API y Redis, sigue pausada, se aprueba y publica.",
+  "fecha": "2026-10-24T11:35:35",
+  "pasos": [
+    {
+      "nota": "",
+      "pedido": "POST /tasks",
+      "body": {
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte."
+      },
+      "status": 202,
+      "ms": 4.3,
+      "respuesta": {
+        "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+        "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+        "status": "PENDING",
+        "links": {
+          "estado": "/tasks/4b6e1c6c30c7450fa436100d1938614f",
+          "conversacion": "/conversations/2fe39ffe4bea4502b2f6a29f5c2b07c8",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta WAITING_APPROVAL",
+      "pedido": "GET /tasks/4b6e1c6c30c7450fa436100d1938614f",
+      "status": 200,
+      "respuesta": {
+        "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+        "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+        "status": "WAITING_APPROVAL",
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte.",
+        "publicar": false,
+        "created_at": "2026-10-24T14:35:35.175+00:00",
+        "updated_at": "2026-10-24T14:36:13.450+00:00",
+        "started_at": "2026-10-24T14:35:35.177+00:00",
+        "finished_at": null,
+        "resultado": null,
+        "error": null,
+        "aprobacion_pendiente": {
+          "accion": "publicar_reporte",
+          "motivos": [
+            "La pregunta pide una acción hacia afuera ('publica'): se ejecutaría 'publicar_reporte'."
+          ],
+          "borrador": "**Reporte de Error: CAU-417**\n\nPara el equipo de soporte, se detalla a continuación la información técnica sobre el error CAU-417 en Caudal:\n\n*   **Significado**: El error indica que el esquema de un evento no coincide con el esquema registrado. Esto sucede cuando un productor modifica la estructura de los mensajes sin realizar el versionado correspondiente [caudal-errores › Códigos de error CAU].\n*   **Resolución**: Se debe configurar el parámetro `politica_esquema=\"tolerante\"`. Esta acción permite que el sistema ignore los campos desconocidos en lugar de interrumpir el proceso con un fallo [caudal-errores › Códigos de error CAU].\n\nNo se reportan discrepancias en la documentación consultada.",
+          "como_responder": "POST /tasks/{job_id}/approve con el header X-Reviewer-Key y {\"aprobado\": true|false, \"comentario\": \"...\"}"
+        },
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": null,
+          "latencia_ejecucion_s": 38.268,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 5,
+          "tokens_entrada": 8838,
+          "tokens_salida": 1264,
+          "tokens_totales": 10102,
+          "costo_estimado_usd": 0.0047451,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 1656,
+              "tokens_salida": 269,
+              "costo_estimado_usd": 0.0011693
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 2,
+              "tokens_entrada": 2916,
+              "tokens_salida": 142,
+              "costo_estimado_usd": 0.0012298
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 4266,
+              "tokens_salida": 853,
+              "costo_estimado_usd": 0.002346
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-24T14:35:35.175+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-24T14:35:35.177+00:00",
+            "por": null
+          },
+          {
+            "status": "WAITING_APPROVAL",
+            "t": "2026-10-24T14:36:13.450+00:00",
+            "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:35:41.206+00:00",
+            "detalle": "-> researcher: Se necesita buscar la definición y solución del error CAU-417 en la documentación oficial de Caudal."
+          },
+          {
+            "nodo": "researcher",
+            "t": "2026-10-24T14:36:02.807+00:00",
+            "detalle": "ok, 5 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:36:08.674+00:00",
+            "detalle": "-> synthesizer: El researcher ya encontro el significado, la solucion y la fuente exacta para el error CAU-417. No se requieren calculos matematicos para esta pregunta conceptu"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:36:13.423+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:36:13.434+00:00",
+            "detalle": "tarea crítica: pide aprobación humana"
+          }
+        ]
+      }
+    },
+    {
+      "nota": "conversación ANTES del reinicio",
+      "pedido": "GET /conversations/e2e-conversacion-10241131",
+      "body": null,
+      "status": 200,
+      "ms": 74.1,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-10241131",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "3f242877756c44618cdce8082fe53ebb",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Actualmente, no es posible determinar cuánto tardaría el proceso utilizando 8 workers.\n\nTras consultar la documentación oficial de Caudal ([caudal-rendimiento › Paralelismo y workers], [caudal-rendimiento › Backpressure y tamaño de lote]), se ha confirmado que no existen datos ni estimaciones de rendimiento para configuraciones de 8 workers. Por lo tanto, esta parte de la consulta permanece sin resolver.",
+            "fuentes": [
+              "caudal-api-flujos › Estado y checkpoints",
+              "caudal-changelog › Caudal 2.0",
+              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers",
+              "caudal-rendimiento › Perfilado con caudal-prof"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-24T14:35:34+00:00"
+          }
+        ],
+        "jobs": [
+          "09fbd43c81cc4fb3856b2a77aec1d334",
+          "3f242877756c44618cdce8082fe53ebb"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 7,
+        "checkpoints": 28
+      }
+    },
+    {
+      "nota": "conversación DESPUÉS del reinicio",
+      "pedido": "GET /conversations/e2e-conversacion-10241131",
+      "body": null,
+      "status": 200,
+      "ms": 60.6,
+      "respuesta": {
+        "thread_id": "e2e-conversacion-10241131",
+        "turnos": [
+          {
+            "numero": 1,
+            "job_id": "3f242877756c44618cdce8082fe53ebb",
+            "pregunta": "¿Y si en vez de 4 workers uso 8, cuánto tardaría?",
+            "respuesta": "Actualmente, no es posible determinar cuánto tardaría el proceso utilizando 8 workers.\n\nTras consultar la documentación oficial de Caudal ([caudal-rendimiento › Paralelismo y workers], [caudal-rendimiento › Backpressure y tamaño de lote]), se ha confirmado que no existen datos ni estimaciones de rendimiento para configuraciones de 8 workers. Por lo tanto, esta parte de la consulta permanece sin resolver.",
+            "fuentes": [
+              "caudal-api-flujos › Estado y checkpoints",
+              "caudal-changelog › Caudal 2.0",
+              "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+              "caudal-rendimiento › Backpressure y tamaño de lote",
+              "caudal-rendimiento › Paralelismo y workers",
+              "caudal-rendimiento › Perfilado con caudal-prof"
+            ],
+            "reporte_publicado": null,
+            "fecha": "2026-10-24T14:35:34+00:00"
+          }
+        ],
+        "jobs": [
+          "09fbd43c81cc4fb3856b2a77aec1d334",
+          "3f242877756c44618cdce8082fe53ebb"
+        ],
+        "job_activo": null,
+        "pausado_en": [],
+        "mensajes": 7,
+        "checkpoints": 28
+      }
+    },
+    {
+      "nota": "el job crítico sigue pausado después del reinicio",
+      "pedido": "GET /tasks/4b6e1c6c30c7450fa436100d1938614f",
+      "body": null,
+      "status": 200,
+      "ms": 3.5,
+      "respuesta": {
+        "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+        "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+        "status": "WAITING_APPROVAL",
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte.",
+        "publicar": false,
+        "created_at": "2026-10-24T14:35:35.175+00:00",
+        "updated_at": "2026-10-24T14:36:13.450+00:00",
+        "started_at": "2026-10-24T14:35:35.177+00:00",
+        "finished_at": null,
+        "resultado": null,
+        "error": null,
+        "aprobacion_pendiente": {
+          "accion": "publicar_reporte",
+          "motivos": [
+            "La pregunta pide una acción hacia afuera ('publica'): se ejecutaría 'publicar_reporte'."
+          ],
+          "borrador": "**Reporte de Error: CAU-417**\n\nPara el equipo de soporte, se detalla a continuación la información técnica sobre el error CAU-417 en Caudal:\n\n*   **Significado**: El error indica que el esquema de un evento no coincide con el esquema registrado. Esto sucede cuando un productor modifica la estructura de los mensajes sin realizar el versionado correspondiente [caudal-errores › Códigos de error CAU].\n*   **Resolución**: Se debe configurar el parámetro `politica_esquema=\"tolerante\"`. Esta acción permite que el sistema ignore los campos desconocidos en lugar de interrumpir el proceso con un fallo [caudal-errores › Códigos de error CAU].\n\nNo se reportan discrepancias en la documentación consultada.",
+          "como_responder": "POST /tasks/{job_id}/approve con el header X-Reviewer-Key y {\"aprobado\": true|false, \"comentario\": \"...\"}"
+        },
+        "aprobacion": null,
+        "metricas": {
+          "latencia_total_s": null,
+          "latencia_ejecucion_s": 38.268,
+          "espera_aprobacion_s": null,
+          "corridas": 1,
+          "llamadas_llm": 5,
+          "tokens_entrada": 8838,
+          "tokens_salida": 1264,
+          "tokens_totales": 10102,
+          "costo_estimado_usd": 0.0047451,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 1656,
+              "tokens_salida": 269,
+              "costo_estimado_usd": 0.0011693
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 2,
+              "tokens_entrada": 2916,
+              "tokens_salida": 142,
+              "costo_estimado_usd": 0.0012298
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 4266,
+              "tokens_salida": 853,
+              "costo_estimado_usd": 0.002346
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-24T14:35:35.175+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-24T14:35:35.177+00:00",
+            "por": null
+          },
+          {
+            "status": "WAITING_APPROVAL",
+            "t": "2026-10-24T14:36:13.450+00:00",
+            "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:35:41.206+00:00",
+            "detalle": "-> researcher: Se necesita buscar la definición y solución del error CAU-417 en la documentación oficial de Caudal."
+          },
+          {
+            "nodo": "researcher",
+            "t": "2026-10-24T14:36:02.807+00:00",
+            "detalle": "ok, 5 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:36:08.674+00:00",
+            "detalle": "-> synthesizer: El researcher ya encontro el significado, la solucion y la fuente exacta para el error CAU-417. No se requieren calculos matematicos para esta pregunta conceptu"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:36:13.423+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:36:13.434+00:00",
+            "detalle": "tarea crítica: pide aprobación humana"
+          }
+        ]
+      }
+    },
+    {
+      "nota": "",
+      "pedido": "POST /tasks/4b6e1c6c30c7450fa436100d1938614f/approve",
+      "body": {
+        "aprobado": true,
+        "comentario": "Revisado: las fuentes están citadas."
+      },
+      "status": 202,
+      "ms": 4.8,
+      "respuesta": {
+        "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+        "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+        "status": "PENDING",
+        "aprobado": true,
+        "links": {
+          "estado": "/tasks/4b6e1c6c30c7450fa436100d1938614f",
+          "conversacion": "/conversations/2fe39ffe4bea4502b2f6a29f5c2b07c8",
+          "aprobar": null
+        }
+      }
+    },
+    {
+      "nota": "polling hasta DONE",
+      "pedido": "GET /tasks/4b6e1c6c30c7450fa436100d1938614f",
+      "status": 200,
+      "respuesta": {
+        "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+        "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+        "status": "DONE",
+        "pregunta": "¿Qué significa el error CAU-417 en Caudal y cómo se resuelve? Publicá el reporte para el equipo de soporte.",
+        "publicar": false,
+        "created_at": "2026-10-24T14:35:35.175+00:00",
+        "updated_at": "2026-10-24T14:36:19.813+00:00",
+        "started_at": "2026-10-24T14:35:35.177+00:00",
+        "finished_at": "2026-10-24T14:36:19.813+00:00",
+        "resultado": {
+          "respuesta": "**Reporte de Error: CAU-417**\n\nPara el equipo de soporte, se detalla a continuación la información técnica sobre el error CAU-417 en Caudal:\n\n*   **Significado**: El error indica que el esquema de un evento no coincide con el esquema registrado. Esto sucede cuando un productor modifica la estructura de los mensajes sin realizar el versionado correspondiente [caudal-errores › Códigos de error CAU].\n*   **Resolución**: Se debe configurar el parámetro `politica_esquema=\"tolerante\"`. Esta acción permite que el sistema ignore los campos desconocidos en lugar de interrumpir el proceso con un fallo [caudal-errores › Códigos de error CAU].\n\nNo se reportan discrepancias en la documentación consultada.",
+          "fuentes": [
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Códigos de error CAU",
+              "chunk_id": "caudal-errores-p1-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.016393,
+              "score_vector": 0.610891,
+              "score_bm25": 2.411629,
+              "recuperado_por": [
+                "vector",
+                "bm25"
+              ]
+            },
+            {
+              "doc_id": "caudal-errores",
+              "seccion": "Diagnóstico de problemas de rendimiento y memoria",
+              "chunk_id": "caudal-errores-p3-c0",
+              "titulo": "Errores frecuentes y solución de problemas",
+              "score": 0.008065,
+              "score_vector": 0.51203,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            },
+            {
+              "doc_id": "caudal-conectores",
+              "seccion": "KafkaFuente: leer desde Apache Kafka",
+              "chunk_id": "caudal-conectores-p1-c0",
+              "titulo": "Conectores de fuentes y sumideros",
+              "score": 0.007937,
+              "score_vector": 0.478221,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            },
+            {
+              "doc_id": "caudal-rendimiento",
+              "seccion": "Perfilado con caudal-prof",
+              "chunk_id": "caudal-rendimiento-p3-c0",
+              "titulo": "Guía de rendimiento y escalado",
+              "score": 0.007812,
+              "score_vector": 0.478095,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            },
+            {
+              "doc_id": "caudal-instalacion",
+              "seccion": "Primer pipeline de ejemplo",
+              "chunk_id": "caudal-instalacion-p3-c0",
+              "titulo": "Instalación y configuración de Caudal",
+              "score": 0.007692,
+              "score_vector": 0.477413,
+              "score_bm25": null,
+              "recuperado_por": [
+                "vector"
+              ]
+            }
+          ],
+          "contribuciones": [
+            {
+              "agente": "researcher",
+              "paso": 1,
+              "estado": "ok",
+              "tarea": "Busca en la documentación oficial de Caudal el significado y la solución para el código de error CAU-417 y aporta las fuentes correspondientes.",
+              "resultado": "- **Significado del código CAU-417**: El esquema de un evento no coincide con el esquema registrado. Ocurre cuando un productor cambia la estructura de los mensajes sin versionarla [caudal-errores › Códigos de error CAU].\n- **Solución**: Configurar `politica_esquema=\"tolerante\"` para que los campos desconocidos se ignoren en lugar de fallar [caudal-errores › Códigos de error CAU].\n- **Fuente**: `caudal-errores › Códigos de error CAU`",
+              "fuentes": [
+                "caudal-errores › Códigos de error CAU",
+                "caudal-errores › Diagnóstico de problemas de rendimiento y memoria",
+                "caudal-conectores › KafkaFuente: leer desde Apache Kafka",
+                "caudal-rendimiento › Perfilado con caudal-prof",
+                "caudal-instalacion › Primer pipeline de ejemplo"
+              ],
+              "herramientas": [
+                "buscar_documentacion"
+              ]
+            }
+          ],
+          "ruta_supervisor": [
+            "researcher",
+            "FINISH"
+          ],
+          "turno": 1,
+          "task_completed": true,
+          "cierre_forzado": false,
+          "fuera_de_dominio": false,
+          "motivos_criticidad": [
+            "La pregunta pide una acción hacia afuera ('publica'): se ejecutaría 'publicar_reporte'."
+          ],
+          "aprobacion": {
+            "aprobado": true,
+            "comentario": "Revisado: las fuentes están citadas.",
+            "revisor": "ana",
+            "fecha": "2026-10-24T14:36:19+00:00"
+          },
+          "reporte_publicado": "final:reporte:4b6e1c6c30c7450fa436100d1938614f"
+        },
+        "error": null,
+        "aprobacion_pendiente": null,
+        "aprobacion": {
+          "aprobado": true,
+          "comentario": "Revisado: las fuentes están citadas.",
+          "revisor": "ana"
+        },
+        "metricas": {
+          "latencia_total_s": 44.638,
+          "latencia_ejecucion_s": 38.287,
+          "espera_aprobacion_s": 6.289,
+          "corridas": 2,
+          "llamadas_llm": 5,
+          "tokens_entrada": 8838,
+          "tokens_salida": 1264,
+          "tokens_totales": 10102,
+          "costo_estimado_usd": 0.0047451,
+          "por_modelo": {
+            "gemini-flash-lite-latest": {
+              "llamadas": 2,
+              "tokens_entrada": 1656,
+              "tokens_salida": 269,
+              "costo_estimado_usd": 0.0011693
+            },
+            "gemini-3.5-flash-lite": {
+              "llamadas": 2,
+              "tokens_entrada": 2916,
+              "tokens_salida": 142,
+              "costo_estimado_usd": 0.0012298
+            },
+            "gemini-3.1-flash-lite": {
+              "llamadas": 1,
+              "tokens_entrada": 4266,
+              "tokens_salida": 853,
+              "costo_estimado_usd": 0.002346
+            }
+          },
+          "modelos_sin_precio": []
+        },
+        "eventos": [
+          {
+            "status": "PENDING",
+            "t": "2026-10-24T14:35:35.175+00:00",
+            "por": null
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-24T14:35:35.177+00:00",
+            "por": null
+          },
+          {
+            "status": "WAITING_APPROVAL",
+            "t": "2026-10-24T14:36:13.450+00:00",
+            "por": null
+          },
+          {
+            "status": "PENDING",
+            "t": "2026-10-24T14:36:19.739+00:00",
+            "por": "approve"
+          },
+          {
+            "status": "RUNNING",
+            "t": "2026-10-24T14:36:19.790+00:00",
+            "por": null
+          },
+          {
+            "status": "DONE",
+            "t": "2026-10-24T14:36:19.813+00:00",
+            "por": null
+          }
+        ],
+        "pasos": [
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:35:41.206+00:00",
+            "detalle": "-> researcher: Se necesita buscar la definición y solución del error CAU-417 en la documentación oficial de Caudal."
+          },
+          {
+            "nodo": "researcher",
+            "t": "2026-10-24T14:36:02.807+00:00",
+            "detalle": "ok, 5 fuentes"
+          },
+          {
+            "nodo": "supervisor",
+            "t": "2026-10-24T14:36:08.674+00:00",
+            "detalle": "-> synthesizer: El researcher ya encontro el significado, la solucion y la fuente exacta para el error CAU-417. No se requieren calculos matematicos para esta pregunta conceptu"
+          },
+          {
+            "nodo": "synthesizer",
+            "t": "2026-10-24T14:36:13.423+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "evaluar_criticidad",
+            "t": "2026-10-24T14:36:13.434+00:00",
+            "detalle": "tarea crítica: pide aprobación humana"
+          },
+          {
+            "nodo": "aprobacion_humana",
+            "t": "2026-10-24T14:36:19.799+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "publicar_reporte",
+            "t": "2026-10-24T14:36:19.805+00:00",
+            "detalle": null
+          },
+          {
+            "nodo": "cerrar_turno",
+            "t": "2026-10-24T14:36:19.808+00:00",
+            "detalle": null
+          }
+        ]
+      }
+    }
+  ],
+  "resumen": {
+    "escenario": "03 HITL aprobada + reinicio",
+    "job_id": "4b6e1c6c30c7450fa436100d1938614f",
+    "thread_id": "2fe39ffe4bea4502b2f6a29f5c2b07c8",
+    "status": "DONE",
+    "estados": "PENDING → RUNNING → WAITING_APPROVAL → PENDING → RUNNING → DONE",
+    "ruta_supervisor": [
+      "researcher",
+      "FINISH"
+    ],
+    "turno": 1,
+    "fuentes": 5,
+    "fuera_de_dominio": false,
+    "reporte_publicado": "final:reporte:4b6e1c6c30c7450fa436100d1938614f",
+    "latencia_total_s": 44.638,
+    "latencia_ejecucion_s": 38.287,
+    "espera_aprobacion_s": 6.289,
+    "llamadas_llm": 5,
+    "tokens_entrada": 8838,
+    "tokens_salida": 1264,
+    "costo_estimado_usd": 0.0047451,
+    "error": null,
+    "llamadas_llm_antes_de_aprobar": 5,
+    "llamadas_llm_al_final": 5,
+    "reiniciado": true,
+    "segundos_hasta_health": 5.2,
+    "turnos_antes": 1,
+    "turnos_despues": 1,
+    "estado_despues_del_reinicio": "WAITING_APPROVAL"
+  }
+}
