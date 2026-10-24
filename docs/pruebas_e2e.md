@@ -13,8 +13,20 @@ Cada fila es un job; el detalle (pedidos y respuestas completas) está en `examp
 | 05 fuera de dominio | DONE | PENDING → RUNNING → DONE | FINISH | 0 | 1 | 703/115 | 0.0004984 | 6.454 | 6.439 |
 | 06 validación y errores | OK | códigos [422, 422, 422, 422, 422, 422, 404, 404, 401, 422, 200] | - | - | 0 | - | - | - | - |
 
-## Reinicio en medio de la prueba 03
+## Reinicios
 
-- `docker compose restart api redis` con el job `4b6e1c6c` en WAITING_APPROVAL; la API volvió a responder `/health` en 5.2 s.
-- La conversación `e2e-conversacion-final-10241141` (pruebas 01, 02 y 03b) tenía 1 turnos antes y 1 después.
-- El job siguió en `WAITING_APPROVAL`; aprobado después del reinicio terminó `DONE` (publicado en `final:reporte:4b6e1c6c30c7450fa436100d1938614f`) con 5 llamadas al LLM en total, las mismas 5 de antes de la pausa: la reanudación salió del checkpoint.
+- **Prueba 03:** `docker compose restart api redis` con el job `4b6e1c6c` en WAITING_APPROVAL; la API volvió a
+  responder `/health` en 5.2 s. La conversación que existía entonces (`e2e-conversacion-10241131`, de una primera
+  corrida) tenía 1 turno antes y 1 después. El job siguió en `WAITING_APPROVAL`; aprobado después del reinicio
+  terminó `DONE` (publicado en `final:reporte:4b6e1c6c30c7450fa436100d1938614f`) con 5 llamadas al LLM en total,
+  las mismas 5 de antes de la pausa: la reanudación salió del checkpoint.
+- **Antes de la 03b:** otro `docker compose restart api redis` (a mano, `/health` en 4 s) con la conversación
+  `e2e-conversacion-final-10241141` en 2 turnos y 41 checkpoints; después del reinicio seguía igual, y el turno 3
+  (03b) respondió con ese historial sin buscar ni calcular.
+
+## Corridas
+
+- Primera corrida (11:31): la 01 quedó `FAILED` por un 503 de alta demanda de Gemini que duró más que los 3
+  intentos de la `RetryPolicy` de entonces (la traza está en Phoenix); 03, 04, 05 y 06 son de esta corrida.
+- Con 4 intentos, se repitieron 01 y 02 en la conversación `e2e-conversacion-final-10241141` (en la 01 la
+  `RetryPolicy` absorbió dos 503) y, después del segundo reinicio, la 03b.
