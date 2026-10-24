@@ -131,7 +131,11 @@ class Settings(BaseSettings):
         return por_rol or self.openai_model
 
     def modelos(self) -> dict[str, str]:
-        return {rol: self.modelo_para(rol) for rol in ("supervisor", "research", "analyst", "synth")}
+        """Modelo de cada rol (y el alternativo de la síntesis, si hay)."""
+        modelos = {rol: self.modelo_para(rol) for rol in ("supervisor", "research", "analyst", "synth")}
+        if self.synth_fallback_model:
+            modelos["synth_fallback"] = self.synth_fallback_model
+        return modelos
 
 
 @lru_cache

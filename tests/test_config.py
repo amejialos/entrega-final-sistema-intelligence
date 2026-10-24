@@ -21,6 +21,7 @@ TODAS = (
     "REDIS_URL",
     "TRACING_ENABLED",
     "REVIEWER_KEYS",
+    "SYNTH_FALLBACK_MODEL",
 )
 
 
@@ -91,3 +92,10 @@ def test_rag_top_k_y_consulta_rag_comparten_el_mismo_limite(entorno):
     entorno.setenv("RAG_TOP_K", str(MAX_K + 1))
     with pytest.raises(ValidationError, match="rag_top_k"):
         Settings(_env_file=None)
+
+
+def test_modelos_incluye_el_alternativo_de_la_sintesis_solo_si_hay(entorno):
+    _completo(entorno)
+    assert "synth_fallback" not in Settings(_env_file=None).modelos()
+    entorno.setenv("SYNTH_FALLBACK_MODEL", "modelo-reserva")
+    assert Settings(_env_file=None).modelos()["synth_fallback"] == "modelo-reserva"

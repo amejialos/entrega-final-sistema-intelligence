@@ -14,7 +14,7 @@ Escenarios (cada uno deja trazas en Phoenix y un JSON con pedidos y respuestas e
   03b seguimiento post-reinicio   tercer turno de la conversación de la 01/02 después del reinicio
   04 rechazo               tarea crítica rechazada por el revisor: no publica y lo explica
   05 fuera de dominio      el supervisor la detecta y la síntesis responde sin LLM
-  06 validación            422 (Pydantic), 404 y 409 (conversación ocupada), sin gastar LLM
+  06 validación            422 (Pydantic), 404, 401 (clave de revisor) y 409, sin gastar LLM
 
 Corren en serie a propósito: con el free tier de Gemini (~5 pedidos/min y ~20/día por modelo)
 lanzarlas en paralelo solo haría cola en el limitador. Resumen en `docs/pruebas_e2e.md`.
@@ -51,9 +51,11 @@ class Registro:
             "pasos": [],
         }
 
-    async def pedir(self, metodo: str, ruta: str, body: Any = None, nota: str = "") -> httpx.Response:
+    async def pedir(
+        self, metodo: str, ruta: str, body: Any = None, nota: str = "", headers: dict[str, str] | None = None
+    ) -> httpx.Response:
         inicio = time.perf_counter()
-        r = await self.client.request(metodo, ruta, json=body)
+        r = await self.client.request(metodo, ruta, json=body, headers=headers)
         ms = round((time.perf_counter() - inicio) * 1000, 1)
         try:
             cuerpo = r.json()
@@ -81,6 +83,44 @@ class Registro:
                 return job
             await asyncio.sleep(intervalo)
         raise TimeoutError(f"{job_id} no llegó a {estados} en {plazo_s} s (quedó en {ultimo})")
+
+    async def escuchar(self, job_id: str, plazo_s: float = 900) -> dict[str, Any]:
+        """Lee `GET /tasks/{id}/stream` (SSE) hasta el evento `fin` y registra cada evento con su segundo."""
+        inicio = time.monotonic()
+        eventos: list[dict[str, Any]] = []
+        tipo = None
+        async with self.client.stream("GET", f"/tasks/{job_id}/stream", timeout=plazo_s) as r:
+            async for linea in r.aiter_lines():
+                if linea.startswith("event: "):
+                    tipo = linea.removeprefix("event: ")
+                elif linea.startswith("data: "):
+                    datos = json.loads(linea.removeprefix("data: "))
+                    s = round(time.monotonic() - inicio, 2)
+                    if tipo == "fin":
+                        eventos.append({"s": s, "evento": "fin", "status": datos["status"]})
+                    else:
+                        eventos.append({"s": s, "evento": tipo, **datos})
+                    if tipo in ("estado", "nodo"):
+                        detalle = datos.get("status") or f"{datos.get('nodo')} {datos.get('detalle') or ''}".strip()
+                        print(f"    [stream {s:6.1f} s] {tipo}: {detalle[:90]}", flush=True)
+        tokens = [e for e in eventos if e["evento"] == "token"]
+        resumen = {
+            "eventos": len(eventos),
+            "eventos_token": len(tokens),
+            "primer_token_s": tokens[0]["s"] if tokens else None,
+            "nodos": [e["nodo"] for e in eventos if e["evento"] == "nodo"],
+            "texto_transmitido": "".join(e["texto"] for e in tokens),
+        }
+        self.datos["pasos"].append(
+            {
+                "nota": "stream SSE hasta el fin",
+                "pedido": f"GET /tasks/{job_id}/stream",
+                "status": 200,
+                "resumen": resumen,
+                "respuesta": eventos,
+            }
+        )
+        return resumen
 
     def guardar(self, resumen: dict[str, Any]) -> dict[str, Any]:
         self.datos["resumen"] = resumen
@@ -133,8 +173,18 @@ async def e01(client: httpx.AsyncClient) -> dict[str, Any]:
     await reg.pedir(
         "POST", "/tasks", {"pregunta": "¿Y con 8 workers cuánto tarda?", "thread_id": HILO}, "409: conversación ocupada"
     )
+    # En vez de polling, el progreso en vivo por SSE: nodos, estados y los tokens de la síntesis.
+    stream = await reg.escuchar(job_id)
     job = await reg.esperar(job_id, "DONE", "FAILED")
-    return reg.guardar(resumir("01 RAG + cálculo", job))
+    return reg.guardar(
+        resumir(
+            "01 RAG + cálculo",
+            job,
+            stream_eventos_token=stream["eventos_token"],
+            stream_primer_token_s=stream["primer_token_s"],
+            stream_texto_igual_a_respuesta=stream["texto_transmitido"] == (job.get("resultado") or {}).get("respuesta"),
+        )
+    )
 
 
 async def e02(client: httpx.AsyncClient) -> dict[str, Any]:
@@ -275,13 +325,21 @@ async def e06(client: httpx.AsyncClient) -> dict[str, Any]:
     await reg.pedir("GET", f"/tasks/{'0' * 32}", nota="404: job inexistente")
     await reg.pedir("POST", f"/tasks/{'0' * 32}/approve", {"aprobado": True}, "404")
     await reg.pedir(
+        "POST",
+        f"/tasks/{'0' * 32}/approve",
+        {"aprobado": True},
+        "401: clave de revisor inválida",
+        headers={"X-Reviewer-Key": "una-clave-que-no-es-de-nadie"},
+    )
+    await reg.pedir("POST", f"/tasks/{'0' * 32}/approve", {"aprobado": True, "revisor": "yo"}, "422: el revisor sale de la clave")
+    await reg.pedir(
         "POST", "/search", {"consulta": "¿Qué significa el error CAU-417?", "k": 3}, "200: búsqueda directa en el RAG"
     )
     codigos = [p["status"] for p in reg.datos["pasos"]]
     return reg.guardar(
         {
             "escenario": "06 validación y errores",
-            "status": "OK" if codigos == [422] * 6 + [404, 404, 200] else "REVISAR",
+            "status": "OK" if codigos == [422] * 6 + [404, 404, 401, 422, 200] else "REVISAR",
             "codigos": codigos,
         }
     )
