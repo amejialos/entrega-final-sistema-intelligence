@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 
 from app.core.config import Settings
 from app.rag.corpus import load_chunks
-from app.rag.ingesta import IndiceIncompatible, armar_registros, asegurar_indice
+from app.rag.ingesta import IndiceIncompatible, armar_registros, asegurar_indice, preparar_indice
 from app.rag.retriever import (
     IndiceBM25,
     PineconeBusquedaVectorial,
@@ -186,3 +186,68 @@ async def test_asegurar_indice_es_idempotente_y_detecta_mismatch():
     assert await asegurar_indice(PineconeFake(1536), _settings()) is False
     with pytest.raises(IndiceIncompatible, match="dimension=768"):
         await asegurar_indice(PineconeFake(768), _settings())
+
+
+class _IndiceFake:
+    """Índice async de Pinecone en memoria: upsert, stats y context manager."""
+
+    def __init__(self, nube: "_PineconeNubeFake") -> None:
+        self.nube = nube
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return None
+
+    async def upsert(self, vectors, namespace, **kwargs):
+        self.nube.vectores.setdefault(namespace, {}).update({v["id"]: v for v in vectors})
+
+    async def describe_index_stats(self):
+        return SimpleNamespace(namespaces={ns: SimpleNamespace(vector_count=len(v)) for ns, v in self.nube.vectores.items()})
+
+
+class _PineconeNubeFake:
+    def __init__(self, existe: bool, vectores: int = 0) -> None:
+        self.existe, self.creaciones = existe, 0
+        self.vectores: dict[str, dict] = {"ns": {f"v{i}": {} for i in range(vectores)}} if vectores else {}
+
+    async def has_index(self, nombre):
+        return self.existe
+
+    async def describe_index(self, nombre):
+        return SimpleNamespace(dimension=1536, metric="cosine", status=SimpleNamespace(ready=True))
+
+    async def create_index(self, **kwargs):
+        self.existe, self.creaciones = True, self.creaciones + 1
+
+    async def index(self, name):
+        return _IndiceFake(self)
+
+
+class _EmbeddingsFake:
+    def __init__(self) -> None:
+        self.llamadas = 0
+
+    async def aembed_documents(self, textos):
+        self.llamadas += 1
+        return [[0.0] * 1536 for _ in textos]
+
+
+async def test_preparar_indice_ingesta_sola_si_el_indice_no_existe(chunks):
+    nube, emb = _PineconeNubeFake(existe=False), _EmbeddingsFake()
+    resumen = await preparar_indice(_settings(), nube, emb)
+    assert resumen is not None and resumen.indice_creado and resumen.chunks == len(chunks)
+    assert nube.creaciones == 1 and len(nube.vectores["ns"]) == len(chunks)
+
+
+async def test_preparar_indice_carga_un_namespace_vacio():
+    nube, emb = _PineconeNubeFake(existe=True), _EmbeddingsFake()
+    resumen = await preparar_indice(_settings(), nube, emb)
+    assert resumen is not None and not resumen.indice_creado and emb.llamadas == 1
+
+
+async def test_preparar_indice_no_toca_un_indice_ya_cargado():
+    nube, emb = _PineconeNubeFake(existe=True, vectores=21), _EmbeddingsFake()
+    assert await preparar_indice(_settings(), nube, emb) is None
+    assert emb.llamadas == 0 and nube.creaciones == 0

@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     pinecone_region: str = "us-east-1"
     rag_top_k: int = Field(default=5, ge=1, le=20)
     rag_peso_vector: float = Field(default=0.5, ge=0, le=1, description="Peso del vector en la fusión RRF.")
+    rag_auto_ingesta: bool = Field(
+        default=True, description="Al arrancar, crea el índice y sube el corpus si falta (máquina limpia)."
+    )
 
     # --- Redis: jobs, cola del worker y checkpoints de LangGraph ---
     redis_url: str = "redis://localhost:6379/0"

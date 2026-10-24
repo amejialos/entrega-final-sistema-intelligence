@@ -126,3 +126,20 @@ async def ingestar(
         vectores_visibles=visibles,
         segundos=round(time.monotonic() - inicio, 1),
     )
+
+
+async def preparar_indice(settings: Settings, pc: Any, embeddings: Embeddings) -> ResumenIngesta | None:
+    """Arranque en una máquina limpia: ingesta el corpus solo si el índice no existe o su namespace está vacío.
+
+    La llama la API al levantar (`RAG_AUTO_INGESTA=true`), así `docker compose up` alcanza aunque
+    la cuenta de Pinecone sea nueva. Si el índice ya tiene vectores no gasta embeddings: devuelve None.
+    """
+    if await pc.has_index(settings.index_name):
+        await asegurar_indice(pc, settings)  # verifica dimensión y métrica antes de usarlo
+        async with await pc.index(name=settings.index_name) as index:
+            if await contar_vectores(index, settings.pinecone_namespace) > 0:
+                return None
+    logger.info("El índice %r no tiene el corpus: se ingesta ahora (una sola vez).", settings.index_name)
+    resumen = await ingestar(settings, pc, embeddings)
+    logger.info("Ingesta automática: %s chunks en %s s.", resumen.chunks, resumen.segundos)
+    return resumen
