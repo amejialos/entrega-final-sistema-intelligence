@@ -14,10 +14,11 @@ tokens y costo**. El progreso (y el texto de la respuesta mientras se escribe) s
 ## Para corregir en 3 minutos
 
 ```bash
-cp .env.example .env            # completá OPENAI_API_KEY (Gemini u OpenAI), PINECONE_API_KEY y la clave de REVIEWER_KEYS
-docker compose up --build -d    # Redis + Phoenix + API; en una cuenta de Pinecone nueva crea el índice y sube el corpus
-curl -s localhost:8000/health   # {"status":"ok", ..., "aprobacion":"protegida"}
-uv run python -m scripts.pruebas_e2e   # (opcional) las pruebas reales; las trazas quedan en http://localhost:6006
+cp .env.example .env                 # completá OPENAI_API_KEY (Gemini u OpenAI) y PINECONE_API_KEY
+python3 -c "import secrets; print(secrets.token_urlsafe(24))"   # pegala como clave de "ana" en REVIEWER_KEYS
+docker compose up --build -d --wait  # Redis + Phoenix + API; en una cuenta de Pinecone nueva crea el índice y sube el corpus
+curl -s localhost:8000/health        # {"status":"ok", ..., "aprobacion":"protegida"}
+uv run python -m scripts.pruebas_e2e # (opcional) las pruebas reales; las trazas quedan en http://localhost:6006
 ```
 
 | criterio de la rúbrica | dónde mirarlo |
@@ -27,6 +28,10 @@ uv run python -m scripts.pruebas_e2e   # (opcional) las pruebas reales; las traz
 | Checkpointer + trazas (20 %) | [conversaciones y reinicio](#9-conversaciones-persistentes-y-reinicio) · [observabilidad](#12-observabilidad-trazas-y-métricas-por-respuesta) · [`screenshots/`](screenshots/) |
 | README + despliegue (15 %) | este bloque · [paso a paso](#6-cómo-levantarlo-paso-a-paso) · [`docker-compose.yml`](docker-compose.yml) · [`run.sh`](run.sh) |
 | Entorno y estándares (10 %) | [variables](#7-variables-de-entorno) · [`.env.example`](.env.example) · `pyproject.toml` + `uv.lock` (Python 3.12) |
+
+El resto del `.env.example` ya tiene valores que funcionan (índice `sistema-intelligence`, Gemini gratis con un
+modelo por rol). Si quedó algún `<...>` sin completar, la API no arranca y el log dice qué variable falta. El
+arranque real en una cuenta de Pinecone sin el índice está en [`docs/arranque_limpio.md`](docs/arranque_limpio.md).
 
 Tabla completa criterio → código → evidencia en la [sección 17](#17-criterio--dónde-se-cumple); las decisiones
 de diseño, con sus alternativas, en la [sección 16](#16-decisiones-de-arquitectura-adr).
@@ -38,7 +43,7 @@ de diseño, con sus alternativas, en la [sección 16](#16-decisiones-de-arquitec
 > redis`** y se aprobó **sin repetir ninguna llamada al LLM**; turno 3 de la conversación respondido después de
 > otro reinicio con el historial del checkpoint. Gemini devolvió dos 503 de "alta demanda" en la prueba 01: la
 > `RetryPolicy` los reintentó y la traza los muestra. Costo y tokens de la API **coinciden exactamente** con
-> Phoenix. `uv run pytest -q` → **208 passed**.
+> Phoenix. `uv run pytest -q` → **229 passed**.
 
 ---
 
@@ -193,7 +198,7 @@ graph TD;
 | `researcher` | agente ReAct con **una** herramienta: `buscar_documentacion` → capa RAG | recibe solo la instrucción (aislamiento de contexto); cita `[doc › sección]` |
 | `analyst` | agente ReAct con `calcular` (AST, sin `eval`) y `estimar_tiempo_procesamiento` | recibe la instrucción + los hallazgos del investigador del turno (o la respuesta previa, si es un seguimiento) |
 | `synthesizer` | redacta la respuesta con las contribuciones | si es fuera de dominio responde un mensaje fijo **sin LLM** |
-| `evaluar_criticidad` | criterio determinista: `publicar: true` o verbos "publicá/enviá/notificá/exportá" | los motivos quedan en el estado y en la traza |
+| `evaluar_criticidad` | criterio determinista: `publicar: true` o un **pedido** de publicar/enviar/notificar/exportar ("publicá el reporte", no "¿qué exporta Caudal?") | los motivos quedan en el estado y en la traza |
 | `aprobacion_humana` | `interrupt()`: pausa hasta `POST /approve`; devuelve `Command(goto=...)` | no tiene efectos antes del `interrupt()` (al reanudar se re-ejecuta) |
 | `publicar_reporte` | el efecto secundario: deja el reporte en Redis | solo se llega aprobado |
 | `cerrar_turno` | agrega el `Turno` al historial de la conversación | única salida a `END`: todos los caminos registran el turno |
@@ -246,7 +251,7 @@ cp .env.example .env        # completá OPENAI_API_KEY, PINECONE_API_KEY y la cl
 docker compose up --build            # agregá -d para dejarlo en segundo plano
 ```
 
-Levanta `redis` (redis:8 con AOF), `phoenix` y `api`, en ese orden: la API espera a que Redis y Phoenix
+Levanta `redis` (`redis:8.10.2` con AOF), `phoenix` y `api`, en ese orden: la API espera a que Redis y Phoenix
 estén *healthy* (`depends_on: condition: service_healthy`) y tiene su propio healthcheck sobre `/health`.
 Al arrancar, la API arma el índice BM25 (21 chunks), se conecta a Pinecone de forma asíncrona y, si el
 índice no existe o está vacío, lo crea y lo carga (por eso el healthcheck de la API tiene `start_period: 180s`).
@@ -299,7 +304,7 @@ está escrito en `app/`: lo controla `tests/test_estandares.py` sobre cada archi
 | `OPENAI_MODEL` | sí | modelo por defecto de todos los roles | `gemini-flash-lite-latest` |
 | `SUPERVISOR_MODEL` · `RESEARCH_MODEL` · `ANALYST_MODEL` · `SYNTH_MODEL` | no | modelo por rol (reparte la cuota gratis, que es por modelo) | `OPENAI_MODEL` |
 | `SYNTH_FALLBACK_MODEL` | no | alternativo de la síntesis si el principal falla (429, 5xx, timeout) | sin fallback |
-| `LLM_RPM` · `LLM_TIMEOUT_S` | no | pedidos por minuto **por modelo** (limitador) · segundos máximos por pedido (un timeout se reintenta) | `4` · `90` |
+| `LLM_RPM` · `LLM_TIMEOUT_S` | no | pedidos por minuto **por modelo** (limitador) · segundos máximos por pedido (un timeout se reintenta) | sin límite (el `.env.example` trae `4`, para el free tier) · `90` |
 | `SUPERVISOR_STRUCTURED_METHOD` | no | `json_schema` · `function_calling` · `json_mode` | `json_schema` |
 | `PRECIOS_LLM` | no | JSON con US$/1M tokens por modelo para el costo estimado (un modelo sin precio queda en `modelos_sin_precio`) | la tabla de Phoenix, en el `.env.example` |
 | `EMBEDDING_MODEL` | sí | modelo de embeddings (el de la ingesta) | `gemini-embedding-001` |
@@ -467,7 +472,8 @@ Los 11 pedidos y sus códigos: 6 × 422 (`pregunta` corta, `publicar` no boolean
   descarta las tareas pendientes del checkpoint (`tests/test_conversations.py`).
 - **Sobrevive a reinicios**: Redis corre con AOF (`--appendonly yes` en `docker-compose.yml`) y un volumen.
 
-**Demo de reinicio** (pruebas 03 y 03b, automatizadas en `scripts/pruebas_e2e.py`):
+**Demo de reinicio** (prueba 03, automatizada en `scripts/pruebas_e2e.py`; el reinicio antes de la 03b se hizo a
+mano, ver [`docs/pruebas_e2e.md`](docs/pruebas_e2e.md)):
 
 1. La tarea crítica `4b6e1c6c` quedó en `WAITING_APPROVAL` con 5 llamadas al LLM.
 2. `docker compose restart api redis` → la API volvió a responder `/health` en 5,2 s.
@@ -493,8 +499,11 @@ con sus turnos ([captura 05](screenshots/05_sesion_conversacion_thread_id.png)).
 
 Una tarea es **crítica** si implica una acción con efectos fuera del sistema: publicar el reporte. Se
 detecta de forma determinista (`motivos_criticidad` en `app/graph/hitl.py`): `"publicar": true` en el
-body, o un pedido en la pregunta ("publicá", "enviá", "notificá", "exportá"; los sustantivos como
-"publicación" no cuentan). No lo decide el LLM: así no se lo puede "convencer" de saltear la aprobación.
+body, o un **pedido** en la pregunta, en formas que no se confunden con una pregunta: voseo con tilde ("publicá",
+"mandá"), imperativo con pronombre ("publicalo"), "quiero que envíes", "publica **el reporte**" o una orden en
+infinitivo al principio ("Notificar al canal..."). "¿Qué métricas exporta Caudal?" o "¿cómo es la publicación de
+eventos?" **no** son críticas (`tests/test_hitl.py`, 16 casos). No lo decide el LLM: así no se lo puede
+"convencer" de saltear la aprobación.
 
 ```bash
 # Prueba 03: la pregunta pide publicar → WAITING_APPROVAL con lo que hay que revisar
@@ -545,7 +554,9 @@ curl -s -X POST localhost:8000/tasks/<job_id>/approve -H 'content-type: applicat
 
 5. **Ingesta automática** (`preparar_indice` en `app/rag/ingesta.py`): al arrancar, si el índice no existe
    o su namespace está vacío, se crea el índice serverless y se suben los chunks (`aembed_documents` +
-   `upsert` con ids deterministas, idempotente). Si ya están, no se gasta ni un embedding.
+   `upsert` con ids deterministas, idempotente). Compara los vectores con los chunks de `data/`: una ingesta que
+   quedó a medias se completa; si ya están todos, no se gasta ni un embedding. Arranque real en una cuenta sin el
+   índice: [`docs/arranque_limpio.md`](docs/arranque_limpio.md).
 
 La herramienta del investigador le pasa al modelo el texto **completo** de cada fragmento con su etiqueta
 `doc › sección`, y guarda la salida completa (con scores) como *artifact*: de ahí salen las `fuentes` de
@@ -569,7 +580,9 @@ Phoenix (`PRECIOS_LLM`) estima el costo. `GET /tasks/{id}` devuelve `latencia_to
 `por_modelo`, acumulando corrida inicial y reanudación.
 
 Las llamadas que fallan (un 429 o un 503 que la `RetryPolicy` reintenta) no suman tokens ni costo; la API las
-cuenta aparte en `llamadas_fallidas` y en Phoenix quedan como spans LLM en ERROR.
+cuenta aparte en `llamadas_fallidas` y en Phoenix quedan como spans LLM en ERROR. (El campo se agregó justo después
+de la corrida del 24/10, al investigar la diferencia de la prueba 01: por eso los `examples/` todavía no lo traen;
+lo cubre `tests/test_metricas.py` y la columna de Phoenix de abajo muestra los dos 503.)
 
 **Control cruzado** ([`docs/phoenix_report.md`](docs/phoenix_report.md), `uv run python -m scripts.phoenix_report`):
 lo que reporta la API coincide con lo que calcula Phoenix para el mismo job.
@@ -584,7 +597,9 @@ lo que reporta la API coincide con lo que calcula Phoenix para el mismo job.
 | 05 fuera de dominio | 0,0004984 | 0,000498 | 703/115 | 703/115 | 1 | 1 + 0 |
 
 **Capturas** (Phoenix 20.21.1, tomadas con `scripts/capturas.py` y Chromium headless; cada una busca su traza por
-el `job_id` de la metadata, así muestra la corrida que dice mostrar):
+el `job_id` de la metadata, así muestra la corrida que dice mostrar). La 08, la 10 y la 15 no son la UI de Phoenix
+sino páginas HTML que arma el script con datos reales (el reporte de Phoenix, la respuesta de `GET /tasks/{id}` y
+los eventos SSE que recibió la prueba 01):
 
 | captura | qué muestra |
 |---|---|
@@ -623,6 +638,8 @@ de Gemini) el 24/10/2026. Resumen en [`docs/pruebas_e2e.md`](docs/pruebas_e2e.md
 - La latencia la domina la **cuota**, no el modelo: con `LLM_RPM=4` cada modelo admite un pedido cada 15 s.
   Una llamada sola tarda 1-6 s (`scripts/probar_modelos.py`). Con una cuota paga, bajar ese límite baja la
   latencia casi linealmente.
+- **Dos corridas** (detalle en [`docs/pruebas_e2e.md`](docs/pruebas_e2e.md)): 03, 04, 05 y 06 son de la primera;
+  01, 02 y 03b, de la segunda, en una conversación nueva, porque en la primera la 01 había quedado `FAILED`.
 - **La prueba 01 atravesó dos 503** ("This model is currently experiencing high demand") del modelo del
   investigador: la `RetryPolicy` reintentó con espera y el job terminó bien (130 s de esos 206 son el
   investigador, reintentos incluidos). En una corrida anterior el mismo 503 duró más que los 3 intentos de
@@ -634,26 +651,31 @@ de Gemini) el 24/10/2026. Resumen en [`docs/pruebas_e2e.md`](docs/pruebas_e2e.md
 ## 14. Tests automáticos
 
 ```bash
-uv run pytest -q          # 208 passed (sin red: fakeredis, InMemorySaver, LLM y RAG fake)
+uv run pytest -q          # 229 passed (sin red: fakeredis, InMemorySaver, LLM y RAG fake)
                           # los 2 de tests/test_redis_checkpoint.py usan un Redis real si hay uno en :6379
-                          # (docker compose up -d redis); sin Redis: 206 passed + 2 skipped
+                          # (docker compose up -d redis); sin Redis: 227 passed + 2 skipped
 uv run ruff check . && uv run ruff format --check .
 ```
 
+<details>
+<summary><b>Qué prueba cada archivo</b></summary>
+
 | archivo | tests | qué prueba |
 |---|---|---|
-| `tests/test_api.py` | 20 | **202 sin bloquear** (< 0,5 s con el grafo corriendo); `PENDING → RUNNING → DONE`; excepción → **FAILED** con el error y el worker sigue vivo; 5 jobs en paralelo; **422** para bodies y paths inválidos; 404; mensajes de un worker caído reencolados; **un worker que arranca no le roba mensajes a otro vivo**; `/health` 503 con contrato si Redis no responde; OpenAPI documentado |
-| `tests/test_stream.py` | 5 | **SSE**: los pasos del grafo quedan en el job; el stream trae estados y nodos en orden y se cierra al terminar o en la pausa; **los tokens de la síntesis llegan antes de que termine el nodo** y forman exactamente la respuesta |
+| `tests/test_api.py` | 21 | **202 sin bloquear** (< 0,5 s con el grafo corriendo); `PENDING → RUNNING → DONE`; excepción → **FAILED** con el error y el worker sigue vivo; 5 jobs en paralelo; **422** para bodies y paths inválidos; 404; mensajes de un worker caído reencolados; **un worker que arranca no le roba mensajes a otro vivo**; **un mensaje reentregado de un job terminado no lo vuelve a correr**; `/health` 503 con contrato si Redis no responde; OpenAPI documentado |
+| `tests/test_stream.py` | 7 | **SSE**: los pasos del grafo quedan en el job; el stream trae estados y nodos en orden y se cierra al terminar o en la pausa; **los tokens de la síntesis llegan antes de que termine el nodo** y forman exactamente la respuesta; un reintento que escribe más texto igual dispara `reinicio`; OpenAPI documenta los cinco eventos |
 | `tests/test_sintesis.py` | 5 | la síntesis es una **cadena LCEL** que devuelve `RespuestaFinal` con sus citas; respuesta vacía → `with_retry`; 429 del principal → **responde el fallback**; un error que no es transitorio no usa el fallback |
 | `tests/test_conversations.py` | 4 | **seguimiento con el mismo `thread_id` usa el historial**; el turno se reinicia (`Overwrite`); la conversación sobrevive a "reiniciar" la API; 409 por conversación ocupada; un turno FAILED no contamina el siguiente |
-| `tests/test_hitl.py` | 20 | criterio de criticidad; pausa, **aprobar** → publica una vez; **rechazar** → no publica y lo explica; 409 por doble aprobación; 422 del body; **401 sin clave o con una equivocada, el revisor sale de la clave, 503 sin revisores**; otro worker reanuda **sin llamar a ningún LLM** |
-| `tests/test_tools.py` | 34 | **`args_schema` Pydantic** rechaza argumentos inválidos antes de ejecutar; el agente recibe el error y corrige; **salidas tipadas** vía artifact; calculadora AST contra código malicioso, **overflow y resultados desmesurados** |
-| `tests/test_rag.py` | 13 | BM25 sobre el corpus real; matemática de RRF; recuperador async y su **span RETRIEVER**; `POST /search`; la respuesta de un job trae las fuentes; ingesta idempotente; **ingesta automática** (índice inexistente, vacío o ya cargado) |
+| `tests/test_hitl.py` | 28 | criterio de criticidad (16 casos, con las preguntas informativas que no deben pausar); pausa, **aprobar** → publica una vez; **rechazar** → no publica y lo explica; 409 por doble aprobación; 422 del body; **401 sin clave o con una equivocada, el revisor sale de la clave, 503 sin revisores**; otro worker reanuda **sin llamar a ningún LLM** |
+| `tests/test_tools.py` | 35 | **`args_schema` Pydantic** rechaza argumentos inválidos antes de ejecutar; el agente recibe el error y corrige; **salidas tipadas** vía artifact; calculadora AST contra código malicioso, **overflow, resultados desmesurados y complejos** |
+| `tests/test_rag.py` | 15 | BM25 sobre el corpus real; matemática de RRF; recuperador async y su **span RETRIEVER**; `POST /search`; la respuesta de un job trae las fuentes; ingesta idempotente; **ingesta automática** (índice inexistente, vacío, a medias o ya cargado; dos procesos creándolo a la vez) |
 | `tests/test_estandares.py` | 77 | sobre **cada archivo de `app/`**: ni `requests` ni `time.sleep`, y ningún literal que sea un id de modelo o de índice |
 | `tests/test_graph.py` | 10 | rutas del supervisor, contribuciones con fuentes, aislamiento de contexto, rúbrica, tope de pasos, fuera de dominio sin LLM, diagrama del grafo real |
-| `tests/test_config.py` · `tests/test_providers.py` | 13 | sin variables obligatorias no arranca y dice cuáles; keys secretas; `REVIEWER_KEYS`; `RAG_TOP_K` y `ConsultaRAG` comparten el límite; modelo por rol; **solo la síntesis hace streaming**; limitador por modelo; thought signatures; **timeouts y caídas de red se reintentan**, la cuota diaria no |
+| `tests/test_config.py` · `tests/test_providers.py` | 20 | sin variables obligatorias no arranca y dice cuáles; **los `<...>` del `.env.example` sin completar tampoco**, y el `.env.example` completado es válido; nombre de índice con el patrón de Pinecone; keys secretas; `REVIEWER_KEYS`; `RAG_TOP_K` y `ConsultaRAG` comparten el límite; modelo por rol; **solo la síntesis hace streaming**; limitador por modelo; thought signatures; **timeouts y caídas de red se reintentan**, la cuota diaria no |
 | `tests/test_metricas.py` | 5 | el callback cuenta tokens por modelo y estima el costo; **las llamadas que fallan se cuentan aparte**; suma corrida + reanudación |
 | `tests/test_redis_checkpoint.py` | 2 | contra **Redis real** (`AsyncRedisSaver`): la pausa HITL se reanuda con otra instancia; `Overwrite` se serializa bien |
+
+</details>
 
 ## 15. Async, Pydantic y funciones avanzadas de LangGraph/LangChain
 
@@ -687,7 +709,10 @@ escritura de archivos de los scripts. BM25 sobre 21 chunks es cálculo en memori
 El estado del grafo es un `TypedDict` de valores simples porque se serializa en cada checkpoint; Pydantic
 valida en los **bordes** (lo que entra y sale de la API, de las herramientas, de los LLM y de la cola).
 
-**Funciones avanzadas usadas** (lo que pidió la devolución de la PE6):
+<details>
+<summary><b>Funciones avanzadas usadas</b> (lo que pidió la devolución de la PE6)</summary>
+
+
 
 | función | dónde | para qué |
 |---|---|---|
@@ -706,6 +731,8 @@ valida en los **bordes** (lo que entra y sale de la API, de las herramientas, de
 | `InMemoryRateLimiter` por modelo | `_rate_limiter` (`app/core/providers.py`) | no pasarse de la cuota por minuto del free tier |
 | `draw_mermaid()` | `scripts/exportar_grafo.py` | el diagrama del README es el del grafo real |
 
+</details>
+
 ## 16. Decisiones de arquitectura (ADR)
 
 Cada decisión con el contexto, las alternativas que se descartaron y lo que cuesta.
@@ -713,21 +740,24 @@ Cada decisión con el contexto, las alternativas que se descartaron y lo que cue
 **ADR-1 · Cola propia sobre Redis en vez de Celery/Arq.** *Contexto:* el grafo ya es async y Redis ya está
 (checkpoints). *Alternativas:* Celery (síncrono por diseño, un broker más), Arq (async, pero otra abstracción
 sobre la misma Redis). *Decisión:* `LPUSH` + `BLMOVE` a una lista `procesando` **por worker**, con una señal de
-vida que vence a los 30 s; los mensajes de un worker caído se reencolan y el checkpoint permite continuar.
-*Costo:* entrega "al menos una vez" (un job puede reanudarse); sin prioridades ni reintento automático de un
+vida que vence a los 30 s; los mensajes de un worker caído se reencolan y el checkpoint permite continuar. Un
+mensaje reentregado de un job que ya terminó se descarta (`mensaje_vigente`). *Costo:* entrega "al menos una vez"
+(un job interrumpido se reanuda); sin prioridades ni reintento automático de un
 job `FAILED`.
 
 **ADR-2 · `AsyncRedisSaver` en vez de Postgres o SQLite.** *Alternativas:* `AsyncPostgresSaver` (mejor para
 consultar historia con SQL), `AsyncSqliteSaver` (un archivo, no sirve con varios procesos). *Decisión:* Redis,
 porque ya es la cola y el estado de los jobs: un servicio menos, AOF para durabilidad. *Costo:* necesita los
-módulos JSON y Search (`redis:8`); los checkpoints no vencen (habría que agregar TTL para conversaciones viejas).
+módulos JSON y Search (`redis:8.10.2`); los checkpoints no vencen (habría que agregar TTL para conversaciones viejas).
 
 **ADR-3 · Polling + SSE en vez de WebSocket.** *Contexto:* el cliente necesita seguir un job que tarda minutos.
 *Alternativas:* WebSocket (bidireccional, pero no hace falta mandar nada mientras corre), webhooks (el
 cliente necesita un endpoint público). *Decisión:* `GET /tasks/{id}` para polling simple y `GET /tasks/{id}/stream`
-(SSE: HTTP común, reconexión del navegador, `curl -N`). El stream lee los eventos y el borrador del job en Redis
-cada 250 ms, así funciona con cualquier cantidad de workers y de réplicas de la API. *Costo:* una lectura de
-Redis por cliente conectado cada 250 ms; con muchos clientes conviene Redis Streams (`XREAD BLOCK`).
+(SSE: HTTP común, se prueba con `curl -N`, un cliente de navegador es un `EventSource`). El stream lee los eventos
+y el borrador del job en Redis cada 250 ms, así funciona con cualquier cantidad de workers y de réplicas de la API.
+*Costo:* una lectura de Redis por cliente conectado cada 250 ms; no hay `id:` por evento ni `Last-Event-ID`, así que
+quien se reconecta recibe todo desde el principio (el cliente cierra al recibir `fin`). Con muchos clientes o
+reconexiones conviene Redis Streams (`XREAD BLOCK`) con ids.
 
 **ADR-4 · Streaming de tokens solo en la síntesis.** *Contexto:* Gemini exige devolver la *thought signature*
 de cada tool call, y el rescate de ese campo está en la ruta sin streaming. *Decisión:* los agentes con
@@ -737,7 +767,7 @@ pasos, no texto.
 
 **ADR-5 · Criterio de criticidad determinista y revisores por clave.** *Alternativas:* que el LLM decida si
 una tarea es crítica (manipulable con la pregunta), OAuth/JWT (más infraestructura que la que pide el
-alcance). *Decisión:* reglas fijas (`publicar: true` o verbos de acción) y `REVIEWER_KEYS` con el nombre de cada
+alcance). *Decisión:* reglas fijas (`publicar: true` o un pedido explícito) y `REVIEWER_KEYS` con el nombre de cada
 revisor; sin revisores, la aprobación está **deshabilitada** (seguro por defecto). *Costo:* las claves se
 rotan cambiando el `.env`; el resto de la API no tiene autenticación ni límite por cliente.
 
@@ -766,8 +796,8 @@ Las referencias son a funciones y clases (no a números de línea, que cambian c
 | **1. Arquitectura y coherencia del sistema (30 %)**: LLMs + RAG + agentes en un flujo unificado | composición única `recursos_desde_settings` (`app/main.py`): trazas → Redis → checkpointer → RAG → modelos → grafo → worker; `build_graph` (`app/graph/builder.py`); el investigador usa la capa RAG (`crear_herramienta_busqueda`); lo de M1 (`build_model`, streaming) y M2 (`build_cadena_sintesis`, LCEL) adentro; fuentes del RAG en la respuesta (`resumen_resultado`); memoria por `thread_id` (`OrchestratorState`, `entrada_turno`); HITL (`aprobacion_humana`); SSE (`stream_tarea`) | diagramas de las secciones 2 y 3; pruebas 01-05 en [docs/pruebas_e2e.md](docs/pruebas_e2e.md); capturas de las trazas; `tests/test_rag.py`, `tests/test_sintesis.py`, `tests/test_stream.py` |
 | **2. Robustez técnica: asincronía y validación (25 %)** | async de punta a punta (sección 15); Pydantic en API, herramientas, LLM, HITL, cola y configuración (sección 15); reintentos de 429/5xx/timeouts (`es_error_transitorio`); calculadora acotada (`evaluar_expresion`); varios workers sin doble ejecución (`Worker.recuperar`) | `tests/test_estandares.py` (77, uno por archivo); `tests/test_api.py` (202 sin bloquear, 422, FAILED, recuperación); `tests/test_tools.py`; [examples/06](examples/06_validacion_y_errores.json) (422, 404, 401 reales) |
 | **3. Persistencia y observabilidad (20 %)**: checkpointers y trazado externo | `AsyncRedisSaver` (`redis_checkpointer`) + `compile(checkpointer=...)` + `thread_id` en `run_config`; reanudación con `Command(resume=...)`; Redis con AOF y volumen; trazas OpenInference (`init_tracing`); métricas por respuesta (`MetricasLLM`) | demo de reinicio (sección 9) y [docs/redis_evidencia.md](docs/redis_evidencia.md); `tests/test_conversations.py`, `tests/test_redis_checkpoint.py`; una traza abierta por prueba en [`screenshots/`](screenshots/); control cruzado API = Phoenix (sección 12) |
-| **4. Documentación y despliegue (15 %)** | este README (3 minutos para corregir, diagramas, paso a paso, variables, ejemplos reales, ADR); `docker-compose.yml` con healthchecks y `depends_on: service_healthy`; ingesta automática; `run.sh`; `Dockerfile` sin root | `docker compose up --build` en una copia limpia levanta todo y `/health` responde (sección 6); [captura de Swagger](screenshots/09_api_swagger.png); [examples/](examples/) |
-| **5. Configuración de entorno y estándares de código (10 %)** | Python 3.12 (`requires-python`, `.python-version`, imagen `python:3.12-slim`); `uv.lock` + `requirements.txt` (sin dependencias de desarrollo); un solo `Settings` sin IDs ni modelos en el código; `.env.example` con todas las variables; type hints; `ruff` | `tests/test_config.py`, `tests/test_estandares.py`; `ruff check` y `ruff format --check` sin errores; ninguna key en el historial de git; `.env` en `.gitignore` |
+| **4. Documentación y despliegue (15 %)** | este README (3 minutos para corregir, diagramas, paso a paso, variables, ejemplos reales, ADR); `docker-compose.yml` con healthchecks y `depends_on: service_healthy`; ingesta automática; `run.sh`; `Dockerfile` sin root | [`docs/arranque_limpio.md`](docs/arranque_limpio.md): clone desde GitHub + `.env.example` con solo las keys + `docker compose up --build -d --wait` en una cuenta de Pinecone sin el índice → la API lo crea, sube el corpus y responde; [captura de Swagger](screenshots/09_api_swagger.png); [examples/](examples/) |
+| **5. Configuración de entorno y estándares de código (10 %)** | Python 3.12 (`requires-python`, `.python-version`, imagen `python:3.12.15-slim`; `redis:8.10.2` fijo); `uv.lock` + `requirements.txt` (sin dependencias de desarrollo); un solo `Settings` sin IDs ni modelos en el código; `.env.example` con todas las variables; type hints; `ruff` | `tests/test_config.py`, `tests/test_estandares.py`; `ruff check` y `ruff format --check` sin errores; ninguna key en el historial de git; `.env` en `.gitignore` |
 
 ## 18. Devoluciones anteriores incorporadas
 
