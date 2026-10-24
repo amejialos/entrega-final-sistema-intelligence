@@ -238,15 +238,19 @@ Al arrancar, la API arma el índice BM25 (21 chunks) y se conecta a Pinecone de 
 ./run.sh                              # docker compose up -d --wait redis phoenix + uv sync + uvicorn
 ```
 
-**3. (Solo si el índice no existe o es nuevo) Ingesta del corpus**
+**3. El índice de Pinecone: automático**
+
+No hace falta ningún paso manual. Al arrancar, la API se fija si `INDEX_NAME` existe y si su namespace
+tiene vectores (`preparar_indice`, `app/rag/ingesta.py`): en una cuenta de Pinecone nueva **crea el índice
+serverless y sube los 21 chunks** de `data/` antes de aceptar pedidos; si ya están cargados no gasta ni un
+embedding. Se puede apagar con `RAG_AUTO_INGESTA=false` y hacer la ingesta a mano:
 
 ```bash
 uv run python -m scripts.ingest --solo-indice   # crea el índice si falta y cuenta vectores (sin embeddings)
 uv run python -m scripts.ingest                 # sube los 21 chunks; idempotente (mismos ids: no duplica)
 ```
 
-Salida real en [`docs/ingesta.txt`](docs/ingesta.txt): el índice ya existía y la segunda corrida dejó
-**21 → 21** vectores.
+Salida real de la ingesta manual en [`docs/ingesta.txt`](docs/ingesta.txt).
 
 **4. Verificar**
 
@@ -284,6 +288,8 @@ una, la API no arranca y el error dice cuál (test: `tests/test_config.py:38`).
 | `PINECONE_NAMESPACE` | sí | namespace del corpus | `caudal-docs` |
 | `PINECONE_CLOUD` · `PINECONE_REGION` | no | dónde crear el índice si no existe | `aws` · `us-east-1` |
 | `RAG_TOP_K` · `RAG_PESO_VECTOR` | no | fragmentos por búsqueda · peso del vector en RRF | `5` · `0.5` |
+| `RAG_AUTO_INGESTA` | no | al arrancar, crea el índice y sube el corpus si falta o está vacío (máquina limpia) | `true` |
+| `REVIEWER_API_KEY` | no (recomendada) | clave de revisor: `POST /approve` exige el header `X-Reviewer-Key` (401 sin ella); mínimo 16 caracteres | sin definir = aprobación abierta (la API lo avisa) |
 | `REDIS_URL` | no | jobs, cola y checkpoints (el compose la pisa con `redis://redis:6379/0`) | `redis://localhost:6379/0` |
 | `REDIS_PREFIJO` · `JOB_TTL_S` | no | prefijo de claves · vencimiento de los jobs | `final` · 7 días |
 | `WORKER_CONCURRENCY` · `WORKER_EMBEBIDO` | no | jobs a la vez · `0` = la API solo encola (`python -m app.worker`) | `5` · `1` |
@@ -297,9 +303,10 @@ una, la API no arranca y el error dice cuál (test: `tests/test_config.py:38`).
 | método y ruta | qué hace | códigos |
 |---|---|---|
 | `POST /tasks` | crea un turno (con o sin `thread_id`) y lo encola | **202**, 409 (conversación ocupada), 422 |
-| `GET /tasks/{job_id}` | estado, resultado (respuesta, **fuentes**, contribuciones) y **métricas** | 200, 404, 422 |
+| `GET /tasks/{job_id}` | estado, resultado (respuesta, **fuentes**, contribuciones), **métricas** y los **pasos** del grafo | 200, 404, 422 |
+| `GET /tasks/{job_id}/stream` | **progreso en vivo por SSE**: cada cambio de estado y cada nodo del grafo que termina | 200, 404, 422 |
 | `GET /tasks` | últimos jobs | 200 |
-| `POST /tasks/{job_id}/approve` | aprueba o rechaza una tarea crítica pausada | **202**, 404, 409, 422 |
+| `POST /tasks/{job_id}/approve` | aprueba o rechaza una tarea crítica pausada (header `X-Reviewer-Key` si hay `REVIEWER_API_KEY`) | **202**, 401, 404, 409, 422 |
 | `GET /conversations/{thread_id}` | historial de la conversación, leído del checkpoint | 200, 404, 422 |
 | `POST /search` | búsqueda directa en la capa RAG | 200, 422, 503 |
 | `GET /health` | Redis responde, grafo y RAG cargados | 200 |
@@ -452,9 +459,16 @@ curl -s localhost:8000/tasks/<job_id>
 #   "borrador": "**Reporte Técnico: Error CAU-417** ...", "como_responder": "POST /tasks/{job_id}/approve con {...}"}
 
 curl -s -X POST localhost:8000/tasks/<job_id>/approve -H 'content-type: application/json' \
+  -H "X-Reviewer-Key: $REVIEWER_API_KEY" \
   -d '{"aprobado": true, "comentario": "Revisado: las fuentes están citadas.", "revisor": "ana"}'
 # 202 → DONE con "reporte_publicado": "final:reporte:<job_id>"
+# sin el header (o con otra clave) → 401 y el job sigue en WAITING_APPROVAL
 ```
+
+- **Quién puede aprobar:** con `REVIEWER_API_KEY` definida, solo quien manda esa clave en `X-Reviewer-Key`
+  (comparación en tiempo constante, `app/api/deps.py`). En Swagger aparece el botón **Authorize**.
+  `/health` informa `"aprobacion": "protegida"` o `"abierta"`; si queda abierta, la API lo avisa en el log
+  al arrancar (`tests/test_hitl.py`: 401 sin clave y con una clave equivocada, 202 con la correcta).
 
 - **Aprobada** ([`examples/03_hitl_aprobada_con_reinicio.json`](examples/03_hitl_aprobada_con_reinicio.json)):
   `PENDING → RUNNING → WAITING_APPROVAL → PENDING → RUNNING → DONE`, reporte publicado en Redis.
