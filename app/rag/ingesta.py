@@ -58,12 +58,18 @@ async def asegurar_indice(pc: Any, settings: Settings, espera_max_s: float = 120
         return False
 
     logger.info("Creando el índice serverless %r...", nombre)
-    await pc.create_index(
-        name=nombre,
-        dimension=settings.embedding_dimension,
-        metric=METRICA,
-        spec=ServerlessSpec(cloud=settings.pinecone_cloud, region=settings.pinecone_region),
-    )
+    try:
+        await pc.create_index(
+            name=nombre,
+            dimension=settings.embedding_dimension,
+            metric=METRICA,
+            spec=ServerlessSpec(cloud=settings.pinecone_cloud, region=settings.pinecone_region),
+        )
+    except Exception as exc:
+        # Otro proceso (la API y un worker aparte arrancando juntos) lo creó entre has_index y create_index.
+        if "409" not in str(exc) and "already exists" not in str(exc).lower():
+            raise
+        logger.info("Otro proceso creó el índice %r al mismo tiempo: se usa ese.", nombre)
     limite = time.monotonic() + espera_max_s
     while not (await pc.describe_index(nombre)).status.ready:
         if time.monotonic() > limite:
@@ -129,17 +135,20 @@ async def ingestar(
 
 
 async def preparar_indice(settings: Settings, pc: Any, embeddings: Embeddings) -> ResumenIngesta | None:
-    """Arranque en una máquina limpia: ingesta el corpus solo si el índice no existe o su namespace está vacío.
+    """Arranque en una máquina limpia: ingesta el corpus si el índice no existe o le faltan chunks.
 
     La llama la API al levantar (`RAG_AUTO_INGESTA=true`), así `docker compose up` alcanza aunque
-    la cuenta de Pinecone sea nueva. Si el índice ya tiene vectores no gasta embeddings: devuelve None.
+    la cuenta de Pinecone sea nueva. Compara los vectores del namespace con los chunks de `data/`
+    (los mismos que usa BM25): una ingesta que quedó a medias se completa. Si ya están todos, no
+    gasta embeddings y devuelve None. El upsert usa ids deterministas: repetirlo no duplica nada.
     """
     if await pc.has_index(settings.index_name):
         await asegurar_indice(pc, settings)  # verifica dimensión y métrica antes de usarlo
+        esperados = len(await asyncio.to_thread(load_chunks))
         async with await pc.index(name=settings.index_name) as index:
-            if await contar_vectores(index, settings.pinecone_namespace) > 0:
+            if await contar_vectores(index, settings.pinecone_namespace) >= esperados:
                 return None
-    logger.info("El índice %r no tiene el corpus: se ingesta ahora (una sola vez).", settings.index_name)
+    logger.info("Al índice %r le falta el corpus: se ingesta ahora.", settings.index_name)
     resumen = await ingestar(settings, pc, embeddings)
     logger.info("Ingesta automática: %s chunks en %s s.", resumen.chunks, resumen.segundos)
     return resumen

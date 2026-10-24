@@ -35,6 +35,7 @@ def entorno(monkeypatch):
 def _completo(entorno) -> None:
     for var in OBLIGATORIAS:
         entorno.setenv(var, f"valor-{var.lower()}")
+    entorno.setenv("INDEX_NAME", "valor-index-name")  # Pinecone: minúsculas, números y guiones
 
 
 def test_sin_variables_obligatorias_no_arranca_y_dice_cuales_faltan(entorno):
@@ -53,7 +54,7 @@ def test_modelo_por_rol_con_fallback_y_vacios_ignorados(entorno):
     assert settings.modelo_para("analyst") == "modelo-analista"
     assert settings.modelo_para("supervisor") == "valor-openai_model"
     assert settings.openai_base_url is None
-    assert settings.index_name == "valor-index_name" and settings.pinecone_namespace == "valor-pinecone_namespace"
+    assert settings.index_name == "valor-index-name" and settings.pinecone_namespace == "valor-pinecone_namespace"
 
 
 def test_las_keys_son_secretas_y_los_tipos_se_validan(entorno):
@@ -99,3 +100,37 @@ def test_modelos_incluye_el_alternativo_de_la_sintesis_solo_si_hay(entorno):
     assert "synth_fallback" not in Settings(_env_file=None).modelos()
     entorno.setenv("SYNTH_FALLBACK_MODEL", "modelo-reserva")
     assert Settings(_env_file=None).modelos()["synth_fallback"] == "modelo-reserva"
+
+
+@pytest.mark.parametrize(
+    ("variable", "valor", "mensaje"),
+    [
+        ("OPENAI_API_KEY", "<tu-key-de-openai-o-de-gemini>", "OPENAI_API_KEY"),
+        ("PINECONE_API_KEY", "<tu-key-de-pinecone>", "PINECONE_API_KEY"),
+        ("INDEX_NAME", "<nombre-del-indice>", "INDEX_NAME"),
+        ("INDEX_NAME", "Indice_Con_Mayusculas", "INDEX_NAME"),
+        ("PINECONE_NAMESPACE", "<namespace-del-corpus>", "PINECONE_NAMESPACE"),
+        ("REVIEWER_KEYS", '{"ana": "<generá-una-clave-con-el-comando-de-arriba>"}', "REVIEWER_KEYS"),
+    ],
+)
+def test_los_placeholders_del_env_example_no_pasan_la_validacion(entorno, variable, valor, mensaje):
+    """Copiar el .env.example sin completarlo falla al arrancar con un mensaje claro (no en el primer pedido)."""
+    _completo(entorno)
+    entorno.setenv("INDEX_NAME", "indice-valido")
+    entorno.setenv(variable, valor)
+    with pytest.raises(ValidationError, match=f"(?i){mensaje}"):
+        Settings(_env_file=None)
+
+
+def test_el_env_example_completado_con_las_keys_es_valido(entorno, tmp_path):
+    from pathlib import Path
+
+    ejemplo = (Path(__file__).parents[1] / ".env.example").read_text(encoding="utf-8")
+    completado = (
+        ejemplo.replace("<tu-key-de-openai-o-de-gemini>", "key-real-1")
+        .replace("<tu-key-de-pinecone>", "key-real-2")
+        .replace("<generá-una-clave-con-el-comando-de-arriba>", "x" * 24)
+    )
+    (tmp_path / ".env").write_text(completado, encoding="utf-8")
+    settings = Settings(_env_file=tmp_path / ".env")
+    assert settings.index_name == "sistema-intelligence" and settings.reviewer_keys["ana"].get_secret_value() == "x" * 24

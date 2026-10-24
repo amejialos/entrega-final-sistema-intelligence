@@ -251,3 +251,22 @@ async def test_preparar_indice_no_toca_un_indice_ya_cargado():
     nube, emb = _PineconeNubeFake(existe=True, vectores=21), _EmbeddingsFake()
     assert await preparar_indice(_settings(), nube, emb) is None
     assert emb.llamadas == 0 and nube.creaciones == 0
+
+
+async def test_preparar_indice_completa_una_ingesta_que_quedo_a_medias(chunks):
+    nube, emb = _PineconeNubeFake(existe=True, vectores=5), _EmbeddingsFake()  # 5 de 21
+    resumen = await preparar_indice(_settings(), nube, emb)
+    assert resumen is not None and emb.llamadas == 1 and len(nube.vectores["ns"]) >= len(chunks)
+
+
+async def test_preparar_indice_tolera_que_otro_proceso_lo_cree_a_la_vez(chunks):
+    """API y worker aparte arrancando juntos en una cuenta nueva: el segundo create_index da 409."""
+
+    class NubeConCarrera(_PineconeNubeFake):
+        async def create_index(self, **kwargs):
+            self.existe = True  # lo creó "el otro proceso"
+            raise RuntimeError("(409) Conflict: ALREADY_EXISTS: Resource already exists")
+
+    nube = NubeConCarrera(existe=False)
+    resumen = await preparar_indice(_settings(), nube, _EmbeddingsFake())
+    assert resumen is not None and resumen.chunks == len(chunks)

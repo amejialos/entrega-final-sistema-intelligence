@@ -65,7 +65,10 @@ class Settings(BaseSettings):
     embedding_model: str = Field(min_length=1, description="Modelo de embeddings (el mismo de la ingesta).")
     embedding_dimension: int = Field(default=1536, gt=0)
     pinecone_api_key: SecretStr
-    index_name: str = Field(min_length=1, description="Índice serverless de Pinecone.")
+    index_name: str = Field(
+        pattern=r"^[a-z0-9](?:[a-z0-9-]{0,43}[a-z0-9])?$",
+        description="Índice serverless de Pinecone (minúsculas, números y guiones; lo exige Pinecone).",
+    )
     pinecone_namespace: str = Field(min_length=1, description="Namespace con los chunks del corpus.")
     pinecone_cloud: str = "aws"
     pinecone_region: str = "us-east-1"
@@ -98,6 +101,23 @@ class Settings(BaseSettings):
     )
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    @model_validator(mode="after")
+    def _sin_placeholders(self) -> "Settings":
+        """Un `<...>` del .env.example sin completar falla acá, con el nombre de la variable, y no en el
+        primer pedido (o, peor, como una credencial de ejemplo que cualquiera que lea el repo conoce)."""
+        valores = {
+            "OPENAI_API_KEY": self.openai_api_key.get_secret_value(),
+            "PINECONE_API_KEY": self.pinecone_api_key.get_secret_value(),
+            "PINECONE_NAMESPACE": self.pinecone_namespace,
+            **{f"REVIEWER_KEYS[{nombre}]": clave.get_secret_value() for nombre, clave in self.reviewer_keys.items()},
+        }
+        sin_completar = [variable for variable, valor in valores.items() if valor.strip().startswith("<")]
+        if sin_completar:
+            raise ValueError(
+                f"Completá en el .env: {', '.join(sin_completar)} (todavía tienen el texto de ejemplo del .env.example)."
+            )
+        return self
 
     @model_validator(mode="after")
     def _modelos_por_rol(self) -> "Settings":
