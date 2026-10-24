@@ -45,7 +45,7 @@ async def recursos_desde_settings(settings: Settings, iniciar_worker: bool = Tru
 
     provider = init_tracing(settings)  # antes de construir el grafo, para que todo quede instrumentado
     async with AsyncExitStack() as pila:
-        pila.callback(shutdown_tracing, provider)
+        pila.push_async_callback(shutdown_tracing, provider)
         redis = Redis.from_url(settings.redis_url, decode_responses=True)
         pila.push_async_callback(redis.aclose)
         await redis.ping()

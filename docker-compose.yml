@@ -66,7 +66,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 180s  # en una cuenta nueva de Pinecone, el arranque crea el índice e ingesta el corpus
     restart: unless-stopped
 
 volumes:

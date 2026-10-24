@@ -1,6 +1,6 @@
 """Worker: corre el grafo en segundo plano y mantiene el estado del job en Redis.
 
-    POST /tasks ──LPUSH──> final:cola ──BLMOVE──> final:procesando ──> Worker.procesar()
+    POST /tasks ──LPUSH──> final:cola ──BLMOVE──> final:procesando:{worker} ──> Worker.procesar()
                                                                         │ RUNNING
                                                                         ├─ terminó ............ DONE (+ resultado y métricas)
                                                                         ├─ interrupt() ........ WAITING_APPROVAL (+ qué aprobar)
@@ -8,10 +8,12 @@
 
 - La cola vive en Redis, no en memoria: los mensajes sobreviven a un reinicio de la API y se
   pueden levantar workers en otro proceso (`uv run python -m app.worker`).
-- `BLMOVE` pasa cada mensaje de la cola a `procesando` en un solo paso atómico; se borra de ahí
-  al terminar. Si el proceso muere a mitad de camino, al arrancar `recuperar()` lo devuelve a la
-  cola (entrega "al menos una vez") y, como hay checkpoint, el grafo CONTINÚA desde el último
-  paso guardado en vez de empezar de cero.
+- `BLMOVE` pasa cada mensaje de la cola a la lista `procesando` DE ESE WORKER en un solo paso
+  atómico; se borra de ahí al terminar. Cada worker renueva una señal de vida en Redis
+  (`final:worker:{id}:vivo`, vence a los LATIDO_TTL_S). Si un proceso muere a mitad de camino, su
+  señal vence y `recuperar()` (al arrancar y en cada latido de cualquier worker) devuelve sus
+  mensajes a la cola: entrega "al menos una vez", y como hay checkpoint el grafo CONTINÚA desde
+  el último paso guardado. Un worker que arranca nunca toma los mensajes de otro que está vivo.
 - Cada mensaje se valida con Pydantic (`MENSAJE_COLA`) al leerlo: uno mal formado se descarta
   con un log, no tira abajo al consumidor.
 - `concurrencia` consumidores (tareas asyncio) comparten el event loop: el grafo es async de
@@ -23,6 +25,7 @@
 import asyncio
 import logging
 import time
+import uuid
 from typing import Any
 
 from langchain_core.messages import AIMessage
@@ -95,6 +98,10 @@ def espera_de_aprobacion(job: JobRecord) -> float | None:
     return round(total, 3) if any(e.status == Estado.WAITING_APPROVAL for e in job.eventos) else None
 
 
+LATIDO_TTL_S = 30  # sin renovar la señal de vida en este tiempo, el worker se considera caído
+LATIDO_CADA_S = 10
+
+
 class Worker:
     def __init__(
         self,
@@ -111,8 +118,10 @@ class Worker:
         self.precios = precios or {}
         self.concurrencia = concurrencia
         self.espera_cola_s = espera_cola_s
+        self.id = uuid.uuid4().hex[:12]
         self.cola = f"{store.prefijo}:cola"
-        self.procesando = f"{store.prefijo}:procesando"
+        self.procesando = f"{store.prefijo}:procesando:{self.id}"
+        self.clave_latido = f"{store.prefijo}:worker:{self.id}:vivo"
         self._tareas: list[asyncio.Task] = []
         self._activo = False
 
@@ -127,10 +136,12 @@ class Worker:
     # --- Ciclo de vida ---
 
     async def iniciar(self) -> None:
+        await self.redis.set(self.clave_latido, "1", ex=LATIDO_TTL_S)
         await self.recuperar()
         self._activo = True
         self._tareas = [asyncio.create_task(self._consumir(i), name=f"worker-{i}") for i in range(self.concurrencia)]
-        logger.info("Worker iniciado con %d consumidores", self.concurrencia)
+        self._tareas.append(asyncio.create_task(self._latir(), name="worker-latido"))
+        logger.info("Worker %s iniciado con %d consumidores", self.id, self.concurrencia)
 
     async def detener(self) -> None:
         self._activo = False
@@ -138,14 +149,40 @@ class Worker:
             tarea.cancel()
         await asyncio.gather(*self._tareas, return_exceptions=True)
         self._tareas = []
+        # Apagado ordenado: sin señal de vida, lo que haya quedado en curso lo recupera otro worker
+        # (o este mismo al volver a arrancar).
+        await self.redis.delete(self.clave_latido)
+
+    async def _latir(self) -> None:
+        """Renueva la señal de vida y recupera los mensajes de workers caídos."""
+        while self._activo:
+            try:
+                await self.redis.set(self.clave_latido, "1", ex=LATIDO_TTL_S)
+                await self.recuperar()
+            except asyncio.CancelledError:
+                raise
+            except Exception:  # Redis caído: se reintenta en el próximo latido
+                logger.exception("worker %s: no pude renovar el latido", self.id)
+            await asyncio.sleep(LATIDO_CADA_S)
 
     async def recuperar(self) -> int:
-        """Devuelve a la cola los mensajes que quedaron a medio procesar (caída del proceso)."""
+        """Devuelve a la cola los mensajes de workers caídos (su lista `procesando` sin señal de vida).
+
+        Nunca toca la lista propia ni la de un worker vivo. La lista única del formato anterior
+        (`final:procesando`, sin id) se trata como de un worker caído.
+        """
+        prefijo = f"{self.store.prefijo}:procesando"
         recuperados = 0
-        while await self.redis.lmove(self.procesando, self.cola, "RIGHT", "RIGHT"):
-            recuperados += 1
+        async for clave in self.redis.scan_iter(match=f"{prefijo}*"):
+            if clave == self.procesando:
+                continue
+            worker_id = clave.removeprefix(f"{prefijo}:") if clave != prefijo else None
+            if worker_id and await self.redis.exists(f"{self.store.prefijo}:worker:{worker_id}:vivo"):
+                continue
+            while await self.redis.lmove(clave, self.cola, "RIGHT", "RIGHT"):
+                recuperados += 1
         if recuperados:
-            logger.warning("Se reencolaron %d mensajes que habían quedado en proceso", recuperados)
+            logger.warning("Se reencolaron %d mensajes de workers caídos", recuperados)
         return recuperados
 
     async def _consumir(self, numero: int) -> None:

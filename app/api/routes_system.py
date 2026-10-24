@@ -1,18 +1,27 @@
 """Salud del sistema (la usa el healthcheck de Docker Compose)."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
+from redis.exceptions import RedisError
 
 from app import __version__
 from app.api.deps import RecursosDep
-from app.api.schemas import HealthOut, InfoRAG
+from app.api.schemas import ErrorOut, HealthOut, InfoRAG
 
 router = APIRouter(tags=["sistema"])
 
 
-@router.get("/health", summary="Salud del servicio", response_model=HealthOut)
+@router.get(
+    "/health",
+    summary="Salud del servicio",
+    response_model=HealthOut,
+    responses={503: {"model": ErrorOut, "description": "Redis no responde."}},
+)
 async def health(recursos: RecursosDep) -> HealthOut:
     """Redis responde y el grafo y la capa RAG están cargados. No llama a Pinecone ni al LLM."""
-    await recursos.redis.ping()
+    try:
+        await recursos.redis.ping()
+    except RedisError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Redis no responde.") from exc
     info = recursos.info
     return HealthOut(
         status="ok",

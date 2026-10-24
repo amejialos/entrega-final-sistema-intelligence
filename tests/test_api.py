@@ -8,6 +8,7 @@ import time
 import pytest
 
 from app.worker.models import Estado
+from app.worker.worker import Worker
 from tests.conftest import PREGUNTA, grafo_simple, levantar_api
 
 
@@ -115,17 +116,40 @@ async def test_el_estado_del_job_vive_en_redis():
         assert json.loads(await api.redis.hget(f"final:job:{job_id}", "resultado"))["task_completed"] is True
 
 
-async def test_recuperar_reencola_mensajes_que_quedaron_a_medio_procesar():
+async def test_recuperar_reencola_mensajes_de_un_worker_muerto():
+    """Un proceso murió con un mensaje tomado (su lista `procesando` quedó sin señal de vida)."""
     async with levantar_api(grafo_simple()) as api:
-        await api.worker.detener()  # simulamos que el proceso murió con un mensaje tomado
+        await api.worker.detener()
         job = await api.store.crear(PREGUNTA)
-        await api.redis.lpush("final:procesando", json.dumps({"tipo": "ejecutar", "job_id": job.job_id}))
+        await api.redis.lpush("final:procesando:muerto", json.dumps({"tipo": "ejecutar", "job_id": job.job_id}))
+        # formato viejo (una sola lista compartida): también se recupera
+        viejo = await api.store.crear("otra pregunta")
+        await api.redis.lpush("final:procesando", json.dumps({"tipo": "ejecutar", "job_id": viejo.job_id}))
 
-        await api.worker.iniciar()  # al arrancar, recuperar() lo devuelve a la cola
+        await api.worker.iniciar()  # al arrancar, recuperar() los devuelve a la cola
 
-        terminado = await api.esperar(job.job_id, "DONE")
-        assert terminado["resultado"]["task_completed"] is True
-        assert await api.redis.llen("final:procesando") == 0
+        assert (await api.esperar(job.job_id, "DONE"))["resultado"]["task_completed"] is True
+        assert (await api.esperar(viejo.job_id, "DONE"))["status"] == "DONE"
+        assert await api.redis.exists("final:procesando:muerto", "final:procesando") == 0
+
+
+async def test_un_worker_que_arranca_no_le_roba_mensajes_a_otro_que_esta_vivo():
+    """Con varios procesos (WORKER_EMBEBIDO=0), recuperar() solo toca las listas de workers sin latido."""
+    compuerta = asyncio.Event()
+    async with levantar_api(grafo_simple(compuerta)) as api:
+        job_id = await api.crear()
+        await api.esperar(job_id, "RUNNING")  # el worker A lo tiene tomado y está vivo
+        otro = Worker(api.redis, api.store, grafo_simple(), espera_cola_s=0.05)
+        assert await otro.recuperar() == 0  # B arranca: no toca la lista de A
+        assert await api.redis.llen(api.worker.procesando) == 1
+
+        await api.redis.delete(api.worker.clave_latido)  # A "muere": su latido vence
+        api.worker._activo = False
+        for tarea in api.worker._tareas:  # sin dejar que A siga (ni renueve el latido)
+            tarea.cancel()
+        assert await otro.recuperar() == 1  # ahora sí: el mensaje vuelve a la cola
+        assert await api.redis.llen("final:cola") == 1
+        compuerta.set()
 
 
 async def test_un_mensaje_invalido_en_la_cola_se_descarta_sin_matar_al_worker():
@@ -134,7 +158,7 @@ async def test_un_mensaje_invalido_en_la_cola_se_descarta_sin_matar_al_worker():
         await api.redis.lpush("final:cola", "esto no es json")
         job_id = await api.crear()  # el siguiente job se procesa normalmente
         assert (await api.esperar(job_id, "DONE"))["status"] == "DONE"
-        assert await api.redis.llen("final:procesando") == 0
+        assert await api.redis.llen(api.worker.procesando) == 0
 
 
 async def test_health_y_openapi_documentan_los_contratos():
@@ -152,3 +176,16 @@ async def test_health_y_openapi_documentan_los_contratos():
         for ruta in ("/tasks/{job_id}/approve", "/conversations/{thread_id}", "/search", "/health"):
             assert ruta in esquema["paths"]
         assert "Metricas" in esquema["components"]["schemas"] and "Fuente" in esquema["components"]["schemas"]
+
+
+async def test_health_responde_503_con_contrato_si_redis_no_responde():
+    from redis.exceptions import ConnectionError as RedisConnectionError
+
+    async with levantar_api(grafo_simple()) as api:
+
+        async def caido():
+            raise RedisConnectionError("Redis caído")
+
+        api.app.state.recursos.redis.ping = caido
+        r = await api.client.get("/health")
+        assert r.status_code == 503 and r.json() == {"detail": "Redis no responde."}

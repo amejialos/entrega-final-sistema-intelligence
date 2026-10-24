@@ -5,11 +5,15 @@ Es la misma búsqueda que usa la herramienta del investigador: mismo esquema de 
 RETRIEVER en Phoenix. No llama a ningún LLM de chat (solo al modelo de embeddings).
 """
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 
 from app.api.deps import RecursosDep
 from app.api.schemas import ErrorOut
 from app.rag.schemas import ConsultaRAG, ResultadoBusqueda
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["rag"])
 
@@ -22,4 +26,8 @@ async def buscar(consulta: ConsultaRAG, recursos: RecursosDep) -> ResultadoBusqu
     try:
         return await recursos.rag.buscar(consulta)
     except Exception as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, f"La búsqueda falló: {type(exc).__name__}: {exc}"[:300]) from exc
+        # El detalle (que puede traer URLs internas o datos del proveedor) va al log, no al cliente.
+        logger.exception("POST /search falló")
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, f"La búsqueda no está disponible ahora ({type(exc).__name__})."
+        ) from exc

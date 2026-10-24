@@ -267,6 +267,12 @@ th{{background:#eef}}.kpi{{display:inline-block;margin:0 18px 12px 0;padding:10p
 </body></html>"""
 
 
+def _escribir(salidas: dict[str, str]) -> None:
+    DOCS.mkdir(exist_ok=True)
+    for nombre, contenido in salidas.items():
+        (DOCS / nombre).write_text(contenido, encoding="utf-8")
+
+
 async def main() -> None:
     from app.core.config import get_settings
 
@@ -276,12 +282,12 @@ async def main() -> None:
     args = parser.parse_args()
     rep = await analizar(args.url, args.proyecto or get_settings().phoenix_project_name)
     cruce = control_cruzado(rep)
-    DOCS.mkdir(exist_ok=True)
-    (DOCS / "phoenix_report.json").write_text(
-        json.dumps({**rep, "control_cruzado": cruce}, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    (DOCS / "phoenix_report.md").write_text(a_markdown(rep, cruce), encoding="utf-8")
-    (DOCS / "phoenix_report.html").write_text(a_html(rep, cruce), encoding="utf-8")
+    salidas = {
+        "phoenix_report.json": json.dumps({**rep, "control_cruzado": cruce}, ensure_ascii=False, indent=2),
+        "phoenix_report.md": a_markdown(rep, cruce),
+        "phoenix_report.html": a_html(rep, cruce),
+    }
+    await asyncio.to_thread(_escribir, salidas)
     print(a_markdown(rep, cruce))
 
 

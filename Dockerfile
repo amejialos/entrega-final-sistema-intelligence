@@ -19,6 +19,9 @@ RUN python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 
 COPY app ./app
 COPY data ./data
+# Los scripts operativos (ingesta, pruebas, reporte) también se pueden correr dentro del contenedor:
+#   docker compose exec api python -m scripts.ingest --solo-indice
+COPY scripts ./scripts
 
 # Sin root dentro del contenedor.
 RUN useradd --create-home --uid 1000 app && chown -R app /srv

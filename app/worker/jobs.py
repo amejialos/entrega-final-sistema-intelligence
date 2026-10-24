@@ -19,6 +19,7 @@ escribirían el mismo checkpoint y el segundo no vería la respuesta del primero
 activo en el hilo, `crear` levanta `ConversacionOcupada` y la API responde 409.
 """
 
+import asyncio
 import json
 import uuid
 from datetime import UTC, datetime
@@ -184,7 +185,7 @@ class JobStore:
 
     async def listar(self, limite: int = 20) -> list[JobRecord]:
         ids = await self.redis.zrevrange(f"{self.prefijo}:jobs", 0, limite - 1)
-        jobs = [await self.get(job_id) for job_id in ids]
+        jobs = await asyncio.gather(*(self.get(job_id) for job_id in ids))
         return [j for j in jobs if j is not None]
 
     # --- conversaciones ---

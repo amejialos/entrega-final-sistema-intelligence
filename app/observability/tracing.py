@@ -22,6 +22,7 @@ como `session.id`: todos los turnos de una conversación quedan en la misma sesi
 observar sin pasar por los agentes.
 """
 
+import asyncio
 import logging
 
 from opentelemetry.sdk.trace import TracerProvider
@@ -53,12 +54,16 @@ def init_tracing(settings: Settings) -> TracerProvider | None:
     return provider
 
 
-def shutdown_tracing(provider: TracerProvider | None) -> None:
-    """Exporta los spans pendientes y desinstrumenta (al apagar la API)."""
+async def shutdown_tracing(provider: TracerProvider | None) -> None:
+    """Exporta los spans pendientes y desinstrumenta (al apagar la API).
+
+    `force_flush` y `shutdown` del SDK de OpenTelemetry son bloqueantes (esperan al exportador
+    HTTP, hasta 30 s si Phoenix no responde): se corren en un hilo para no frenar el event loop.
+    """
     if provider is None:
         return
     from openinference.instrumentation.langchain import LangChainInstrumentor
 
-    provider.force_flush()
+    await asyncio.to_thread(provider.force_flush)
     LangChainInstrumentor().uninstrument()
-    provider.shutdown()
+    await asyncio.to_thread(provider.shutdown)

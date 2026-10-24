@@ -210,7 +210,9 @@ async def servicio_rag_desde_settings(settings: Settings) -> AsyncIterator[Servi
     """Producción: `AsyncPinecone` + índice async + embeddings async + BM25 sobre `data/`.
 
     Con `RAG_AUTO_INGESTA` (default) primero se asegura de que el índice exista y tenga el corpus:
-    en una cuenta de Pinecone nueva lo crea y lo carga, así `docker compose up` alcanza. El chunking (lectura de archivos + tiktoken) se hace una vez al arrancar, en un hilo para no
+    en una cuenta de Pinecone nueva lo crea y lo carga, así `docker compose up` alcanza.
+
+    El chunking (lectura de archivos + tiktoken) se hace una vez al arrancar, en un hilo para no
     frenar el event loop mientras la API levanta. Los clientes de Pinecone se cierran al salir.
     """
     from pinecone import AsyncPinecone

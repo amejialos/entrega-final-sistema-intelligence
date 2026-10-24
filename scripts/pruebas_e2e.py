@@ -325,6 +325,17 @@ def a_markdown(resumenes: list[dict[str, Any]]) -> str:
     return "\n".join(lineas) + "\n"
 
 
+def _guardar_resumen(resumenes: list[dict[str, Any]], parcial: bool) -> None:
+    """Escribe docs/pruebas_e2e.{json,md}; con --solo, combina con las corridas anteriores."""
+    DOCS.mkdir(exist_ok=True)
+    previos = DOCS / "pruebas_e2e.json"
+    todos = {r["escenario"]: r for r in (json.loads(previos.read_text()) if previos.exists() and parcial else [])}
+    todos.update({r["escenario"]: r for r in resumenes})
+    ordenados = sorted(todos.values(), key=lambda r: r["escenario"])
+    previos.write_text(json.dumps(ordenados, ensure_ascii=False, indent=2), encoding="utf-8")
+    (DOCS / "pruebas_e2e.md").write_text(a_markdown(ordenados), encoding="utf-8")
+
+
 async def main() -> None:
     global HILO
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -349,13 +360,7 @@ async def main() -> None:
             print("  " + json.dumps({k: v for k, v in resumen.items() if v is not None}, ensure_ascii=False))
             resumenes.append(resumen)
 
-    DOCS.mkdir(exist_ok=True)
-    previos = DOCS / "pruebas_e2e.json"
-    todos = {r["escenario"]: r for r in (json.loads(previos.read_text()) if previos.exists() and args.solo else [])}
-    todos.update({r["escenario"]: r for r in resumenes})
-    ordenados = sorted(todos.values(), key=lambda r: r["escenario"])
-    previos.write_text(json.dumps(ordenados, ensure_ascii=False, indent=2), encoding="utf-8")
-    (DOCS / "pruebas_e2e.md").write_text(a_markdown(ordenados), encoding="utf-8")
+    await asyncio.to_thread(_guardar_resumen, resumenes, bool(args.solo))
     print(f"\nResumen en docs/pruebas_e2e.md · pedidos y respuestas en examples/ · conversación {HILO}")
 
 

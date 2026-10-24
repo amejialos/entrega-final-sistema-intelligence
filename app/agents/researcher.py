@@ -66,7 +66,7 @@ def crear_herramienta_busqueda(rag: Buscador, k: int = 5) -> BaseTool:
     async def buscar_documentacion(consulta: str) -> tuple[str, dict[str, Any]]:
         """Busca en la documentación oficial de Caudal (búsqueda híbrida semántica + palabras clave).
 
-        Devuelve JSON con hasta 5 fragmentos: {"resultados": [{"fuente", "contenido"}]}.
+        Devuelve JSON con hasta RAG_TOP_K fragmentos: {"resultados": [{"fuente", "contenido"}]}.
         Si algo falla devuelve {"error": ..., "sugerencia": ...} en vez de fragmentos.
         """
         try:
